@@ -17,15 +17,18 @@ func NewServer() *Server {
 func (s *Server) RegisterRoutes() {
 	v1 := s.engine.Group("/api/v1")
 	v1.GET("/ping/", pingHandler)
+	v1.POST("/session/", startSessionHandler)
 
-	index := s.engine.Group("/")
-	index.GET("/", indexHandler)
+	s.engine.GET("/", indexHandler)
+	s.engine.GET("/session/:id", sessionHandler)
 
 }
 
 func (s *Server) Run() {
-	s.engine.Static("/static", "web/static")
-	s.engine.LoadHTMLGlob("web/pages/*.html")
+	s.engine.Static("/static", "./web/static")
+	s.engine.LoadHTMLGlob("./web/pages/**/*")
+
+	s.RegisterRoutes()
 
 	s.engine.Run()
 }

@@ -1,12 +1,12 @@
-import { PeerEvent } from "./constants.js";
+import { PeerEvent } from "./lib/constants.js";
 import {
   handleCreateOffer,
   handleCreateOfferEvent,
   handleOfferAcceptedEvent,
   handleSetAnswer,
   handleSetOffer,
-} from "./handlers.js";
-import { type SDPEventMessage, WebRTCPeer, peerEmitter } from "./webrtc.js";
+} from "./lib/handlers.js";
+import { type SDPEventMessage, WebRTCPeer, peerEmitter } from "./lib/webrtc.js";
 
 let localPeer: WebRTCPeer | null = null;
 
@@ -42,4 +42,19 @@ peerEmitter.addEventListener(PeerEvent.OFFER_CREATED, (event: Event) => {
 peerEmitter.addEventListener(PeerEvent.OFFER_ACCEPTED, (event: Event) => {
   const customevent = event as CustomEvent<SDPEventMessage>;
   handleOfferAcceptedEvent(customevent.detail.sdp);
+});
+
+const sessionInput = document.getElementById("sessionName") as HTMLInputElement;
+sessionInput.addEventListener("input", (event: Event) => {
+  console.log("works");
+  const sessionInputLabel = document.querySelector(
+    ".app-input-container label",
+  ) as HTMLLabelElement;
+  const value = sessionInput.value.trim();
+  if (sessionInput.value.trim() !== "") {
+    sessionInputLabel.classList.add("activated");
+  } else {
+    sessionInputLabel.classList.remove("activated");
+    sessionInput.value = "";
+  }
 });

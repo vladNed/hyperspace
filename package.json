@@ -1,12 +1,24 @@
 {
-  "name": "go-hyperspace",
+  "name": "hyperspace",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "A p2p secure file sharing application",
+  "author": {
+    "name": "Vlad Nedelcu",
+    "email": "nedelcuvd@gmail.com"
+  },
   "license": "MIT",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "build:styles": "tailwindcss build -i web/static/css/styles.css -o web/static/css/tailwind.css --watch"
   },
+  "keywords": [
+    "p2p",
+    "webrtc",
+    "file-sharing",
+    "web app"
+  ],
   "devDependencies": {
+    "tailwindcss": "3.4.14",
     "typescript": "^5.8.2"
   }
 }

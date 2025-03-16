@@ -1,0 +1,37 @@
+{{ define "top" }}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>{{ .title }}</title>
+        <meta name="description" content="{{ .description }}" />
+
+        <!-- Inter font CDN -->
+        <link rel="preconnect" href="https://rsms.me/" />
+        <link
+            rel="stylesheet"
+            href="https://rsms.me/inter/inter.css"
+            media="print"
+            onload="this.media='all'"
+        />
+
+        <!-- CSS -->
+        <link rel="stylesheet" href="/static/css/styles.css" />
+        <link rel="stylesheet" href="/static/css/tailwind.css" />
+
+        <!-- Lucide CDN -->
+        <!-- Production version -->
+        <script src="https://unpkg.com/lucide@latest"></script>
+
+        <!-- HTMX -->
+        <script src="/static/htmx/htmx.min.js"></script>
+        <script src="/static/htmx/response-target.min.js"></script>
+    </head>
+    <body hx-ext="response-targets">
+        {{ end }} {{ define "bottom" }}
+        <script>
+            lucide.createIcons();
+        </script>
+    </body>
+</html>
+{{ end }}
