@@ -5,10 +5,11 @@ import "encoding/json"
 type SessionMessageType string
 
 const (
-	Offer  SessionMessageType = "offer"
-	Answer SessionMessageType = "answer"
-	Error  SessionMessageType = "error"
-	Ok     SessionMessageType = "ok"
+	Offer    SessionMessageType = "offer"
+	GetOffer SessionMessageType = "get_offer"
+	Answer   SessionMessageType = "answer"
+	Error    SessionMessageType = "error"
+	Ok       SessionMessageType = "ok"
 )
 
 type SessionMessage struct {
@@ -27,5 +28,23 @@ type OfferResponse struct {
 }
 
 type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
+type SessionRequest struct {
+	SessionId string `json:"sessionId"`
+}
+
+type SessionResponse struct {
+	OfferSDP string `json:"offerSDP"`
+}
+
+type AnswerRequest struct {
+	SessionId string `json:"sessionId"`
+	AnswerSDP string `json:"answerSDP"`
+	Timestamp string `json:"timestamp"`
+}
+
+type AnswerResponse struct {
 	Message string `json:"message"`
 }

@@ -1,22 +1,22 @@
 {{ template "top" .}}
+
 <div
-    class="m-auto w-[70rem] h-screen justify-center flex flex-col items-center"
+    id="widget-container"
+    class="flex flex-col gap-5 w-full items-center m-auto"
 >
-    <div id="widget-container" class="w-[60%] p-5 flex flex-col gap-4">
-        <div class="flex justify-center gap-4 text-3xl font-bold">
-            <span>[*</span>
-            <p>HyperSpace</p>
-            <span>*]</span>
-        </div>
-        <div class="action-selector">
-            <button onclick="window.location = '/session/start'">
-                Start Session
-            </button>
-            <span></span>
-            <button onclick="window.location = '/session/join'">
-                Join Session
-            </button>
-        </div>
+    <div class="flex justify-center gap-4 text-3xl font-bold">
+        <span>[*</span>
+        <p>HyperSpace</p>
+        <span>*]</span>
+    </div>
+    <div class="action-selector">
+        <button onclick="window.location = '/session/start'">
+            Start Session
+        </button>
+        <span></span>
+        <button onclick="window.location = '/session/join'">
+            Join Session
+        </button>
     </div>
 </div>
 

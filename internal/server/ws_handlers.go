@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/vladNed/hyperspace/internal/cache"
+	"github.com/vladNed/hyperspace/internal/hub"
 	"github.com/vladNed/hyperspace/internal/settings"
 )
 
@@ -39,7 +40,7 @@ func wsHandler(c *gin.Context) {
 			log.Println("Error reading message:", err)
 			break
 		}
-		resp, err := parseMessage(msgRaw)
+		resp, err := parseMessage(msgRaw, conn)
 		if err != nil {
 			newError := ErrorResponse{Message: err.Error()}
 			payloadBytes, _ := json.Marshal(newError)
@@ -54,9 +55,13 @@ func wsHandler(c *gin.Context) {
 			break
 		}
 	}
+
+	hub := hub.GetInstance()
+	hub.RemoveSession(conn)
+
 }
 
-func parseMessage(rawMsg SessionMessage) (any, error) {
+func parseMessage(rawMsg SessionMessage, conn *websocket.Conn) (any, error) {
 	switch rawMsg.Type {
 	case Offer:
 		var offerPayload OfferRequest
@@ -70,7 +75,54 @@ func parseMessage(rawMsg SessionMessage) (any, error) {
 			return nil, err
 		}
 
+		hub := hub.GetInstance()
+		hub.AddSession(conn, offerPayload.SessionId)
+
 		return resp, nil
+	case GetOffer:
+		var getOfferPayload SessionRequest
+		err := json.Unmarshal(rawMsg.Payload, &getOfferPayload)
+		if err != nil {
+			return nil, err
+		}
+
+		cacheClient := cache.NewRedis()
+		sessionData, err := cacheClient.Get(getOfferPayload.SessionId)
+		if err != nil {
+			return nil, fmt.Errorf("Offer does not exist")
+		}
+
+		var offerRequest OfferRequest
+		err = json.Unmarshal([]byte(sessionData), &offerRequest)
+		if err != nil {
+			log.Println("Cannot unmarshal offer request:", err)
+			return nil, fmt.Errorf("A server error ocurred")
+		}
+
+		getOfferResp := &SessionResponse{OfferSDP: offerRequest.OfferSDP}
+		return getOfferResp, nil
+	case Answer:
+		var answerPayload AnswerRequest
+		err := json.Unmarshal(rawMsg.Payload, &answerPayload)
+		if err != nil {
+			return nil, err
+		}
+
+		hubInstance := hub.GetInstance()
+		peerConnect := hubInstance.GetConnBySessionId(answerPayload.SessionId)
+		if peerConnect == nil {
+			return nil, fmt.Errorf("Peer connection not found")
+		}
+
+		broadcastPayload := &hub.BroadcastPayload{
+			Conn:    peerConnect,
+			Message: rawMsg.Payload,
+		}
+
+		hubInstance.BroadcastMessage(*broadcastPayload)
+
+		answerSendResp := &AnswerResponse{Message: "Ok"}
+		return answerSendResp, nil
 	default:
 		return nil, fmt.Errorf("Unknown message type: %s", rawMsg.Type)
 	}

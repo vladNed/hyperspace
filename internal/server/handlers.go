@@ -27,18 +27,26 @@ func indexHandler(c *gin.Context) {
 	})
 }
 
-func sessionStartHandler(c *gin.Context) {
+func connectHandler(c *gin.Context) {
 	actionParam := c.Param("action")
-
 	switch actionParam {
 	case "start":
-		newSessionId := utils.GetSessionId()
-		c.HTML(http.StatusOK, "sess-start.html", gin.H{
-			"sessionId": newSessionId,
+		c.HTML(http.StatusOK, "session-start.html", gin.H{
+			"title":       "Hyperspace | Connect",
+			"description": "Hyperspace is p2p secure file sharing application",
+			"sessionId":   utils.GetSessionId(),
 		})
+		break
 	case "join":
-		c.HTML(http.StatusOK, "sess-join.html", gin.H{})
+		c.HTML(http.StatusOK, "session-join.html", gin.H{
+			"title":       "Hyperspace | Join",
+			"description": "Hyperspace is p2p secure file sharing application",
+			"sessionId":   utils.GetSessionId(),
+		})
+		break
 	default:
 		c.HTML(http.StatusNotFound, "not-found.html", gin.H{})
+		break
 	}
+
 }

@@ -20,11 +20,18 @@ export enum PeerState {
 export enum PeerEvent {
   OFFER_CREATED = "offerCreated",
   OFFER_ACCEPTED = "offerAccepted",
+  ANSWER_CREATED = "answerCreated",
+  PEER_CONNECTED = "peerConnected",
+}
+
+export enum SignalingEvent {
+  OFFER_FETCHED = "offerFetched",
 }
 
 export enum SignalingState {
   IDLE,
   OFFER_SENT,
   WAITING_FOR_ANSWER,
+  GATHERING,
   ANSWER_SENT,
 }

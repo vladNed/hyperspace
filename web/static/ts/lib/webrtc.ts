@@ -9,7 +9,7 @@ export class PeerEmitter extends EventTarget {
 export const peerEmitter = new PeerEmitter();
 
 export interface SDPEventMessage {
-  sdp: RTCSessionDescription;
+  sdp: RTCSessionDescriptionInit;
 }
 
 export class WebRTCPeer {
@@ -28,7 +28,6 @@ export class WebRTCPeer {
 
     this.peerConnection.onicecandidate = (event: Event | undefined) => {
       if (!event) return;
-      console.log("New ICE Event");
       if (this.peerConnection.iceGatheringState === "complete") {
         switch (this.state) {
           case PeerState.OFFER_CREATED:
@@ -39,7 +38,6 @@ export class WebRTCPeer {
               },
             );
             this.state = PeerState.OFFER_SET;
-            console.log("offer set");
             break;
           case PeerState.OFFER_ACCEPTED:
             peerEmitter.dispatchPeerEvent<SDPEventMessage>(
@@ -68,6 +66,7 @@ export class WebRTCPeer {
       switch (this.peerConnection.connectionState) {
         case "connected":
           this.state = PeerState.CONNECTED;
+          peerEmitter.dispatchPeerEvent(PeerEvent.PEER_CONNECTED, {});
           break;
         default:
           break;
@@ -99,6 +98,7 @@ export class WebRTCPeer {
 
       this.dataChannel.onopen = (event: Event | undefined) => {
         console.log("Data Channel Opened", event);
+        this.dataChannel?.send("Hello there");
       };
 
       this.dataChannel.onclose = (event: Event | undefined) => {

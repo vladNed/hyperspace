@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/vladNed/hyperspace/internal/hub"
 )
 
 type Server struct {
@@ -23,7 +24,7 @@ func (s *Server) RegisterRoutes() {
 	wsV1.GET("/session/", wsHandler)
 
 	s.engine.GET("/", indexHandler)
-	s.engine.GET("/session/:action", sessionStartHandler)
+	s.engine.GET("/session/:action", connectHandler)
 }
 
 func (s *Server) Run() {
@@ -31,6 +32,9 @@ func (s *Server) Run() {
 	s.engine.LoadHTMLGlob("./web/pages/**/*")
 
 	s.RegisterRoutes()
+
+	hub := hub.GetInstance()
+	go hub.Run()
 
 	s.engine.Run()
 }

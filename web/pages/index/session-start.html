@@ -1,0 +1,28 @@
+{{ template "top" .}}
+<div class="flex flex-col gap-5 w-full items-center m-auto">
+    <div class="flex justify-center gap-4 text-3xl font-bold">
+        <span>[*</span>
+        <div id="status">Idle</div>
+        <span>*]</span>
+    </div>
+    <p>Share this session id with another person to join and exchange files.</p>
+    <div class="w-full app-input-container">
+        <label class="activated" for="sessionId"> Session Id </label>
+        <input
+            type="text"
+            id="sessionId"
+            name="sessionId"
+            disabled="true"
+            value="{{ .sessionId }}"
+        />
+    </div>
+    <div class="w-full flex justify-center">
+        <i data-lucide="loader" class="animate-spin size-10"></i>
+    </div>
+</div>
+
+<script src="/static/js/startSession.js" type="module"></script>
+<script>
+    lucide.createIcons();
+</script>
+{{ template "bottom" .}}

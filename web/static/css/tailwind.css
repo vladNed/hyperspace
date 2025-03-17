@@ -554,6 +554,40 @@ video {
   display: none;
 }
 
+.container {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .container {
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container {
+    max-width: 1280px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .container {
+    max-width: 1536px;
+  }
+}
+
 .m-auto {
   margin: auto;
 }
@@ -571,17 +605,13 @@ video {
   display: none;
 }
 
-.size-5 {
-  width: 1.25rem;
-  height: 1.25rem;
+.size-10 {
+  width: 2.5rem;
+  height: 2.5rem;
 }
 
 .h-screen {
   height: 100vh;
-}
-
-.w-\[60\%\] {
-  width: 60%;
 }
 
 .w-\[70rem\] {
@@ -594,6 +624,16 @@ video {
 
 .max-w-\[60\%\] {
   max-width: 60%;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 .flex-col {
@@ -633,10 +673,6 @@ video {
   padding: 0.25rem;
 }
 
-.p-5 {
-  padding: 1.25rem;
-}
-
 .text-center {
   text-align: center;
 }
@@ -653,11 +689,6 @@ video {
 
 .font-bold {
   font-weight: 700;
-}
-
-.text-neutral-100 {
-  --tw-text-opacity: 1;
-  color: rgb(245 245 245 / var(--tw-text-opacity));
 }
 
 .text-red-900 {
@@ -688,10 +719,23 @@ body {
   font-family: inherit;
 }
 
+/* Layout */
+
+.main-container {
+  margin: auto;
+  display: flex;
+  height: 100vh;
+  max-width: 40rem;
+  align-items: center;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
 /* Action Selector */
 
 .action-selector {
   display: flex;
+  width: 100%;
   justify-content: space-between;
   gap: 0.5rem;
   border-radius: 1.5rem;
@@ -800,6 +844,14 @@ body {
 
 .app-input-container > label {
   position: absolute;
+  --tw-text-opacity: 1;
+  color: rgb(245 245 245 / var(--tw-text-opacity));
+  transition-property: all;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-input-container > label.activated {
   --tw-translate-y: -1.75rem;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
   --tw-bg-opacity: 1;
@@ -807,8 +859,6 @@ body {
   padding: 0.5rem;
   font-size: 0.75rem;
   line-height: 1rem;
-  --tw-text-opacity: 1;
-  color: rgb(245 245 245 / var(--tw-text-opacity));
 }
 
 .app-input-container > div.ico {
@@ -866,9 +916,4 @@ body {
   font-weight: 700;
   --tw-text-opacity: 1;
   color: rgb(248 113 113 / var(--tw-text-opacity));
-}
-
-.hover\:text-violet-500:hover {
-  --tw-text-opacity: 1;
-  color: rgb(139 92 246 / var(--tw-text-opacity));
 }

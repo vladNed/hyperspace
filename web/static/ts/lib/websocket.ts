@@ -1,10 +1,24 @@
-import { SignalingState } from "./constants.js";
+import { PeerEvent, SignalingEvent, SignalingState } from "./constants.js";
 import {
   handleDisplayStatusChange,
   handleSessionResponseError,
 } from "./handlers.js";
-import type { Response, SessionResponse } from "./types.js";
-import { encodeSDP } from "./utils.js";
+import type {
+  AnswerDataResponse,
+  OfferDataResponse,
+  Response,
+  SessionResponse,
+} from "./types.js";
+import { decodeSDP, encodeSDP } from "./utils.js";
+import { peerEmitter, SDPEventMessage } from "./webrtc.js";
+
+export class SignallingEmitter extends EventTarget {
+  dispatchPeerEvent<T>(name: SignalingEvent, detail: T): void {
+    this.dispatchEvent(new CustomEvent(name.valueOf(), { detail }));
+  }
+}
+
+export const signallingEmitter = new SignallingEmitter();
 
 export class WSConnect {
   private client: WebSocket;
@@ -28,6 +42,35 @@ export class WSConnect {
             handleDisplayStatusChange("Waiting for others to join");
           }
           break;
+        case SignalingState.GATHERING:
+          const offerDataMsg = JSON.parse(event.data) as SessionResponse<
+            OfferDataResponse | Response
+          >;
+          if (
+            offerDataMsg.type == "error" &&
+            (offerDataMsg.payload as Response).message
+          ) {
+            handleSessionResponseError(
+              (offerDataMsg.payload as Response).message,
+            );
+          } else if (offerDataMsg.type == "ok") {
+            const offerData = offerDataMsg.payload as OfferDataResponse;
+            const offerSDP = decodeSDP(offerData.offerSDP);
+            signallingEmitter.dispatchPeerEvent(SignalingEvent.OFFER_FETCHED, {
+              offerSDP,
+            });
+          }
+          break;
+        case SignalingState.WAITING_FOR_ANSWER:
+          const answerData = JSON.parse(event.data) as AnswerDataResponse;
+          peerEmitter.dispatchPeerEvent<SDPEventMessage>(
+            PeerEvent.ANSWER_CREATED,
+            {
+              sdp: decodeSDP(answerData.answerSDP),
+            },
+          );
+
+          break;
         default: {
           console.log(event, this.state);
           handleDisplayStatusChange("Left in unkown state. Please refresh.");
@@ -49,5 +92,38 @@ export class WSConnect {
 
     this.client.send(JSON.stringify(payload));
     this.state = SignalingState.OFFER_SENT;
+    handleDisplayStatusChange("Connecting to server");
+  }
+
+  public getSessionData(sessionId: string) {
+    const payload = {
+      type: "get_offer",
+      payload: {
+        sessionId: sessionId,
+      },
+    };
+
+    this.client.send(JSON.stringify(payload));
+    this.state = SignalingState.GATHERING;
+    handleDisplayStatusChange("Fetching session data");
+  }
+
+  public sendAnswer(sdp: RTCSessionDescriptionInit, sessionId: string) {
+    const payload = {
+      type: "answer",
+      payload: {
+        sessionId,
+        answerSDP: encodeSDP(sdp),
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    this.client.send(JSON.stringify(payload));
+    this.state = SignalingState.ANSWER_SENT;
+    handleDisplayStatusChange("Connecting to peer");
+  }
+
+  public close() {
+    this.client.close();
   }
 }
