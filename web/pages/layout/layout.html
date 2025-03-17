@@ -28,7 +28,9 @@
         <script src="/static/htmx/response-target.min.js"></script>
     </head>
     <body hx-ext="response-targets" class="">
-        <div class="main-container">{{ end }} {{ define "bottom" }}</div>
+        <div class="main-container" id="main-container">
+            {{ end }} {{ define "bottom" }}
+        </div>
     </body>
     <script src="/static/js/index.js" type="module"></script>
 </html>

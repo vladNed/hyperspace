@@ -3,6 +3,8 @@ import { handleDisplayStatusChange } from "./lib/handlers.js";
 import { peerEmitter, SDPEventMessage, WebRTCPeer } from "./lib/webrtc.js";
 import { signallingEmitter, WSConnect } from "./lib/websocket.js";
 
+declare var htmx: any;
+
 let localPeer: WebRTCPeer | null = null;
 let signalingChannel: WSConnect = new WSConnect();
 
@@ -25,30 +27,31 @@ startBtn.addEventListener("click", async () => {
 
 peerEmitter.addEventListener(PeerEvent.OFFER_ACCEPTED, (event: Event) => {
   const customevent = event as CustomEvent<SDPEventMessage>;
+  const sessionInput = document.getElementById("sessionId") as HTMLInputElement;
+
+  signalingChannel.sendAnswer(customevent.detail.sdp, sessionInput.value);
 });
 
 peerEmitter.addEventListener(PeerEvent.PEER_CONNECTED, async (event: Event) => {
   handleDisplayStatusChange("Connected to peer");
   signalingChannel.close();
+  const sessionInput = document.getElementById("sessionId") as HTMLInputElement;
+  htmx.ajax("GET", "/session/connected/" + sessionInput.value + "/", {
+    target: "#main-container",
+    swap: "innerHTML",
+  });
 });
 
 signallingEmitter.addEventListener(
   SignalingEvent.OFFER_FETCHED,
   async (event: Event) => {
     if (localPeer === null) {
-      // Created an answerer peer
       localPeer = new WebRTCPeer(false);
     }
     const customEvent = event as CustomEvent<{
       offerSDP: RTCSessionDescription;
     }>;
     await localPeer.acceptOffer(customEvent.detail.offerSDP);
-    const answer = await localPeer.createAnswer();
-
-    const sessionInput = document.getElementById(
-      "sessionId",
-    ) as HTMLInputElement;
-
-    signalingChannel.sendAnswer(answer, sessionInput.value);
+    await localPeer.createAnswer();
   },
 );

@@ -59,7 +59,7 @@ body {
 /* Drag & Drop container */
 
 .drag-drop-container {
-    @apply h-36 w-full border-2 border-dashed border-neutral-700 rounded-2xl bg-neutral-950 flex items-center justify-center;
+    @apply h-44 w-full border-2 border-dashed border-neutral-700 rounded-2xl bg-neutral-950 flex items-center justify-center;
     @apply text-neutral-700 trans;
 }
 

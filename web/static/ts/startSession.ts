@@ -6,6 +6,8 @@ import {
 import { type SDPEventMessage, WebRTCPeer, peerEmitter } from "./lib/webrtc.js";
 import { WSConnect } from "./lib/websocket.js";
 
+declare var htmx: any;
+
 let localPeer: WebRTCPeer | null = null;
 let signalingChannel: WSConnect = new WSConnect();
 
@@ -25,6 +27,11 @@ peerEmitter.addEventListener(PeerEvent.ANSWER_CREATED, async (event: Event) => {
 peerEmitter.addEventListener(PeerEvent.PEER_CONNECTED, async (event: Event) => {
   handleDisplayStatusChange("Connected to peer");
   signalingChannel.close();
+  const sessionInput = document.getElementById("sessionId") as HTMLInputElement;
+  htmx.ajax("GET", "/session/connected/" + sessionInput.value + "/", {
+    target: "#main-container",
+    swap: "innerHTML",
+  });
 });
 
 document.addEventListener("DOMContentLoaded", async () => {

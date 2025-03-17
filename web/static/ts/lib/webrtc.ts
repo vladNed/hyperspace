@@ -68,6 +68,9 @@ export class WebRTCPeer {
           this.state = PeerState.CONNECTED;
           peerEmitter.dispatchPeerEvent(PeerEvent.PEER_CONNECTED, {});
           break;
+        case "disconnected":
+          console.log("Peer disconnected");
+          break;
         default:
           break;
       }

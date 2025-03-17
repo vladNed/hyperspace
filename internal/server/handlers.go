@@ -32,14 +32,14 @@ func connectHandler(c *gin.Context) {
 	switch actionParam {
 	case "start":
 		c.HTML(http.StatusOK, "session-start.html", gin.H{
-			"title":       "Hyperspace | Connect",
+			"title":       "Hyperspace",
 			"description": "Hyperspace is p2p secure file sharing application",
 			"sessionId":   utils.GetSessionId(),
 		})
 		break
 	case "join":
 		c.HTML(http.StatusOK, "session-join.html", gin.H{
-			"title":       "Hyperspace | Join",
+			"title":       "Hyperspace",
 			"description": "Hyperspace is p2p secure file sharing application",
 			"sessionId":   utils.GetSessionId(),
 		})
@@ -48,5 +48,11 @@ func connectHandler(c *gin.Context) {
 		c.HTML(http.StatusNotFound, "not-found.html", gin.H{})
 		break
 	}
+}
 
+func sessionCommonHandler(c *gin.Context) {
+	sessionParam := c.Param("sessionId")
+	c.HTML(http.StatusOK, "session-common.html", gin.H{
+		"sessionId": sessionParam,
+	})
 }

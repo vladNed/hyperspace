@@ -622,10 +622,6 @@ video {
   width: 100%;
 }
 
-.max-w-\[60\%\] {
-  max-width: 60%;
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -689,6 +685,11 @@ video {
 
 .font-bold {
   font-weight: 700;
+}
+
+.text-neutral-500 {
+  --tw-text-opacity: 1;
+  color: rgb(115 115 115 / var(--tw-text-opacity));
 }
 
 .text-red-900 {
@@ -788,7 +789,7 @@ body {
 
 .drag-drop-container {
   display: flex;
-  height: 9rem;
+  height: 11rem;
   width: 100%;
   align-items: center;
   justify-content: center;
