@@ -22,8 +22,49 @@ body {
     font-family: inherit;
 }
 
+/* Action Selector */
+
+.action-selector {
+    @apply flex justify-between bg-neutral-800 rounded-3xl p-2 gap-2;
+}
+
+.action-selector > button {
+    @apply text-center w-full text-violet-400 font-bold rounded-2xl p-2;
+}
+
+.action-selector > button:hover {
+    @apply bg-neutral-700 cursor-pointer trans text-violet-400;
+}
+
+.action-selector > span {
+    @apply border-l-2 border-neutral-700;
+}
+
+/* END */
+
+/* Delimiter */
+
+.delimiter {
+    @apply w-full border-b border-neutral-700;
+}
+
+/* END */
+
+/* Drag & Drop container */
+
+.drag-drop-container {
+    @apply h-36 w-full border-2 border-dashed border-neutral-700 rounded-2xl bg-neutral-950 flex items-center justify-center;
+    @apply text-neutral-700 trans;
+}
+
+.drag-drop-container:hover {
+    @apply border-violet-600 text-violet-600;
+}
+
+/* END */
+
 .app-input-container {
-    @apply border-2 border-neutral-600 rounded-2xl p-3 text-neutral-100 place-items-center flex;
+    @apply border-2 border-neutral-600 rounded-2xl py-3 px-5 text-neutral-100 place-items-center flex;
 }
 
 .app-input-container > input {
@@ -31,11 +72,7 @@ body {
 }
 
 .app-input-container > label {
-    @apply absolute text-neutral-400 trans -z-0;
-}
-
-.app-input-container > label.activated {
-    @apply text-xs -translate-y-7 bg-black p-2 text-neutral-100;
+    @apply absolute text-xs -translate-y-7 bg-black p-2 text-neutral-100;
 }
 
 .app-input-container > div.ico {
@@ -43,13 +80,17 @@ body {
 }
 
 .app-button {
-    @apply bg-violet-600 text-white p-2 rounded-2xl app-button-hover trans;
+    @apply bg-violet-600 text-white p-2 rounded-xl trans w-full;
 }
 
-.app-button-hover {
-    @apply hover:bg-gradient-to-r hover:from-violet-600 hover:to-fuchsia-600 hover:-translate-y-1 hover:shadow-lg hover:shadow-black;
+.app-button:hover {
+    @apply bg-gradient-to-r from-violet-600 to-fuchsia-600 -translate-y-1 shadow-lg shadow-black;
 }
 
 .trans {
     @apply transition-all duration-300 ease-in-out;
+}
+
+.error-text {
+    @apply p-2 w-full font-bold text-red-400 text-center rounded-2xl;
 }

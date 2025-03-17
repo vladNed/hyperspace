@@ -1,0 +1,53 @@
+{{ template "top" .}}
+<div
+    class="m-auto w-[70rem] h-screen justify-center flex flex-col items-center"
+>
+    <div class="flex flex-col gap-5 max-w-[60%] w-full">
+        <div class="flex justify-center gap-4 text-3xl font-bold">
+            <span>[*</span>
+            <button
+                class="hover:text-violet-500 trans"
+                onclick="window.location = '/'"
+            >
+                HyperSpace: Start
+            </button>
+            <span>*]</span>
+        </div>
+        <div class="delimiter"></div>
+        <div class="error-text" id="error-box" hidden="true"></div>
+        <div class="w-full app-input-container">
+            <label for="status"> Status </label>
+            <input
+                type="text"
+                id="status"
+                name="status"
+                disabled="true"
+                value="Idle"
+            />
+        </div>
+        <div class="w-full app-input-container">
+            <label for="sessionId"> Session Id </label>
+            <input
+                type="text"
+                id="sessionId"
+                name="sessionId"
+                disabled="true"
+                value="{{ .sessionId }}"
+            />
+            <div class="ico items-center flex justify-center">
+                <i data-lucide="clipboard" class="text-neutral-100 size-5"></i>
+            </div>
+        </div>
+        <div class="delimiter"></div>
+        <p>Drag & drop any file in the box below to transfer it immediatley.</p>
+        <div class="drag-drop-container">
+            <div>Drag and drop files</div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/startSession.js" type="module"></script>
+<script>
+    lucide.createIcons();
+</script>
+{{ template "bottom" .}}

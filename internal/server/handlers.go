@@ -15,33 +15,30 @@ func pingHandler(c *gin.Context) {
 }
 
 func startSessionHandler(c *gin.Context) {
-	// Check the session request
-	sessionName := c.DefaultPostForm("sessionName", "")
-	if sessionName == "" {
-		c.HTML(http.StatusUnprocessableEntity, "invalid-request.html", gin.H{
-			"error": "Session name is required",
-		})
-		return
-	}
-
-	// Get a session id
-	sessionId := utils.GetSessionId(sessionName)
-
-	c.Header("HX-Location", "/session/"+sessionId)
-	c.JSON(http.StatusCreated, gin.H{"sessionId": sessionId})
+	newSessionId := utils.GetSessionId()
+	c.HTML(http.StatusCreated, "session-id.html", gin.H{"sessionId": newSessionId})
 }
 
 func indexHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"title":       "Hyperspace",
 		"description": "Hyperspace is p2p secure file sharing application",
+		"sessionId":   utils.GetSessionId(),
 	})
 }
 
-func sessionHandler(c *gin.Context) {
-	sessionId := c.Param("id")
-	c.HTML(http.StatusOK, "session.html", gin.H{
-		"title":       "Hyperspace | " + sessionId,
-		"description": "Hyperspace is p2p secure file sharing application",
-	})
+func sessionStartHandler(c *gin.Context) {
+	actionParam := c.Param("action")
+
+	switch actionParam {
+	case "start":
+		newSessionId := utils.GetSessionId()
+		c.HTML(http.StatusOK, "sess-start.html", gin.H{
+			"sessionId": newSessionId,
+		})
+	case "join":
+		c.HTML(http.StatusOK, "sess-join.html", gin.H{})
+	default:
+		c.HTML(http.StatusNotFound, "not-found.html", gin.H{})
+	}
 }
