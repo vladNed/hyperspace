@@ -1,9 +1,12 @@
 import { PeerEvent, SignalingEvent } from "./lib/constants.js";
 import { handleDisplayStatusChange } from "./lib/handlers.js";
-import { peerEmitter, SDPEventMessage, WebRTCPeer } from "./lib/webrtc.js";
+import {
+  type InitTransferMessage,
+  peerEmitter,
+  type SDPEventMessage,
+  WebRTCPeer,
+} from "./lib/webrtc.js";
 import { signallingEmitter, WSConnect } from "./lib/websocket.js";
-
-declare var htmx: any;
 
 let localPeer: WebRTCPeer | null = null;
 let signalingChannel: WSConnect = new WSConnect();
@@ -55,3 +58,8 @@ signallingEmitter.addEventListener(
     await localPeer.createAnswer();
   },
 );
+
+peerEmitter.addEventListener(PeerEvent.INIT_TRANSFER, (event) => {
+  const customEvent = event as CustomEvent<InitTransferMessage>;
+  localPeer?.initTransfer(customEvent.detail.file);
+});

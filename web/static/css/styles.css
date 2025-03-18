@@ -60,11 +60,27 @@ body {
 
 .drag-drop-container {
     @apply h-44 w-full border-2 border-dashed border-neutral-700 rounded-2xl bg-neutral-950 flex items-center justify-center;
-    @apply text-neutral-700 trans;
+    @apply text-neutral-700 trans flex-col gap-2;
 }
 
-.drag-drop-container:hover {
+.drag-drop-container:hover,
+.drag-drop-container.drag-over {
     @apply border-violet-600 text-violet-600;
+}
+
+/* END */
+
+/* Transfer File */
+
+.transfer-file {
+    @apply w-full flex gap-2 p-4 rounded-xl bg-neutral-800 justify-between;
+}
+
+.transfer-file > .check {
+    @apply p-1 border rounded-full text-green-500 border-green-500;
+}
+.transfer-file > .uploading {
+    @apply text-yellow-500;
 }
 
 /* END */

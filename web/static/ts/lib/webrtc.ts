@@ -1,4 +1,12 @@
-import { ICE_SERVERS, PeerEvent, PeerState } from "./constants.js";
+import { CHUNK_SIZE, ICE_SERVERS, PeerEvent, PeerState } from "./constants.js";
+import {
+  type FileMetadata,
+  type FilePayload,
+  PeerMessageType,
+  type PeerMessage,
+  type TransferSession,
+} from "./types.js";
+import { preProcessFile } from "./utils.js";
 
 export class PeerEmitter extends EventTarget {
   dispatchPeerEvent<T>(name: PeerEvent, detail: T): void {
@@ -12,16 +20,20 @@ export interface SDPEventMessage {
   sdp: RTCSessionDescriptionInit;
 }
 
+export interface InitTransferMessage {
+  file: File;
+}
+
 export class WebRTCPeer {
   private peerConnection: RTCPeerConnection;
-  private dataChannel: RTCDataChannel | null;
+  private dataChannel: RTCDataChannel | null = null;
   private state: PeerState = PeerState.IDLE;
+  private transferSession: TransferSession | null = null;
 
   constructor(isOfferer: boolean = false) {
     this.peerConnection = new RTCPeerConnection(ICE_SERVERS);
-    this.dataChannel = null;
     if (isOfferer) {
-      this.setOffererDataChannel();
+      this.dataChannel = this.setOffererDataChannel();
     } else {
       this.setAnswererDataChannel();
     }
@@ -77,39 +89,34 @@ export class WebRTCPeer {
     };
   }
 
-  private setOffererDataChannel(): void {
-    this.dataChannel = this.peerConnection.createDataChannel(
+  private setOffererDataChannel(): RTCDataChannel {
+    const dataChannel = this.peerConnection.createDataChannel(
       "hypserspace-protocol",
     );
 
-    this.dataChannel.onopen = (event: Event | undefined) => {
-      console.log("Data Channel Opened", event);
-    };
-
-    this.dataChannel.onclose = (event: Event | undefined) => {
+    dataChannel.onclose = (event: Event | undefined) => {
       console.log("Data Channel Closed", event);
     };
 
-    this.dataChannel.onmessage = (event: MessageEvent | undefined) => {
-      console.log("Data Channel Message", event);
+    dataChannel.onmessage = (event: MessageEvent | undefined) => {
+      if (!event) return;
+      this.handleOnMessageEvent(event);
     };
+
+    return dataChannel;
   }
 
   private setAnswererDataChannel(): void {
     this.peerConnection.ondatachannel = (event: RTCDataChannelEvent) => {
       this.dataChannel = event.channel;
 
-      this.dataChannel.onopen = (event: Event | undefined) => {
-        console.log("Data Channel Opened", event);
-        this.dataChannel?.send("Hello there");
-      };
-
       this.dataChannel.onclose = (event: Event | undefined) => {
         console.log("Data Channel Closed", event);
       };
 
       this.dataChannel.onmessage = (event: MessageEvent | undefined) => {
-        console.log("Data Channel Message", event);
+        if (!event) return;
+        this.handleOnMessageEvent(event);
       };
     };
   }
@@ -154,5 +161,152 @@ export class WebRTCPeer {
       console.error("SDP ERROR: Cannot create new answer: ", error);
       throw new Error("SDP ERROR: Cannot create new answer");
     }
+  }
+
+  public async initTransfer(file: File): Promise<void> {
+    if (this.state !== PeerState.CONNECTED && this.transferSession !== null)
+      return;
+    const metadata = await preProcessFile(file);
+    const transferSession: TransferSession = {
+      metadata,
+      file,
+      totalData: file.size,
+      dataSent: 0,
+    };
+    this.transferSession = transferSession;
+    this.state = PeerState.TRANSFERRING;
+
+    if (this.dataChannel === null) {
+      throw new Error("Data channel not set");
+    }
+
+    const peerMessage: PeerMessage = {
+      type: PeerMessageType.INIT.valueOf(),
+      body: metadata,
+    };
+    this.dataChannel.send(JSON.stringify(peerMessage));
+  }
+
+  private handleOnMessageEvent(event: MessageEvent): void {
+    const peerMessage: PeerMessage = JSON.parse(event.data);
+    switch (peerMessage.type) {
+      case PeerMessageType.INIT:
+        this.handleInitMessage(peerMessage.body as FileMetadata);
+        break;
+      case PeerMessageType.PAYLOAD:
+        this.handlePayloadMessage(peerMessage.body as FilePayload);
+        break;
+      case PeerMessageType.ERROR:
+        this.handleErrorMessage();
+        break;
+      case PeerMessageType.OK:
+        this.handleOkMessage();
+        break;
+      case PeerMessageType.DONE:
+        this.handleDoneMessage();
+        break;
+      default:
+        console.error("Unknown message type", peerMessage);
+        break;
+    }
+  }
+
+  private requirePeerState(state: PeerState): boolean {
+    if (this.state === state) return true;
+
+    const errorMsg: PeerMessage = {
+      type: PeerMessageType.ERROR,
+      body: { msg: "Peer in wrong state to start new transfer" },
+    };
+    this.dataChannel!.send(JSON.stringify(errorMsg));
+
+    return false;
+  }
+
+  private completeTransfer(): void {
+    const doneMsg: PeerMessage = {
+      type: PeerMessageType.DONE,
+      body: null,
+    };
+
+    this.dataChannel!.send(JSON.stringify(doneMsg));
+    this.state = PeerState.CONNECTED;
+    this.transferSession = null;
+  }
+
+  private sendChunk(chunk: FilePayload): void {
+    const chunkMsg: PeerMessage = {
+      type: PeerMessageType.PAYLOAD,
+      body: chunk,
+    };
+
+    this.dataChannel!.send(JSON.stringify(chunkMsg));
+  }
+
+  private handleInitMessage(payload: FileMetadata): void {
+    if (!this.requirePeerState(PeerState.CONNECTED)) return;
+    this.transferSession = {
+      metadata: payload,
+      file: null,
+      dataSent: 0,
+      totalData: 0,
+    };
+    this.state = PeerState.TRANSFERRING;
+    const okMsg: PeerMessage = {
+      type: PeerMessageType.OK,
+      body: null,
+    };
+    this.dataChannel!.send(JSON.stringify(okMsg));
+  }
+
+  private handlePayloadMessage(payload: FilePayload): void {
+    if (!this.requirePeerState(PeerState.TRANSFERRING)) return;
+    const data = payload.data;
+    const sess = this.transferSession!;
+    sess.dataSent += data.size;
+    if (sess.chunks === undefined) {
+      sess.chunks = [];
+    }
+    sess.chunks!.push(data);
+
+    const okMsgPayload: PeerMessage = {
+      type: PeerMessageType.OK,
+      body: null,
+    };
+    this.dataChannel!.send(JSON.stringify(okMsgPayload));
+  }
+
+  private handleErrorMessage(): void {
+    if (!this.requirePeerState(PeerState.TRANSFERRING)) return;
+    this.state = PeerState.CONNECTED;
+    this.transferSession = null;
+  }
+
+  private handleOkMessage(): void {
+    if (!this.requirePeerState(PeerState.TRANSFERRING)) return;
+    const { totalData, dataSent, file, metadata } = this.transferSession!;
+    if (totalData === dataSent) {
+      this.completeTransfer();
+      return;
+    }
+
+    const nextChunkEnd = Math.min(dataSent + CHUNK_SIZE, totalData);
+    const chunk = file!.slice(dataSent, nextChunkEnd);
+
+    this.sendChunk({ data: chunk, hash: metadata.hash });
+    this.transferSession!.dataSent += chunk.size;
+  }
+
+  private handleDoneMessage(): void {
+    if (!this.requirePeerState(PeerState.TRANSFERRING)) return;
+    const { chunks, metadata } = this.transferSession!;
+    const file = new File(chunks!, metadata.name, {
+      type: metadata.fileType,
+    });
+
+    console.log(file);
+
+    this.state = PeerState.CONNECTED;
+    this.transferSession = null;
   }
 }

@@ -6,6 +6,8 @@ export const ICE_SERVERS = {
   ],
 };
 
+export const CHUNK_SIZE = 20 * 1024 * 1024;
+
 export enum PeerState {
   IDLE,
   OFFER_CREATED,
@@ -15,6 +17,7 @@ export enum PeerState {
   ANSWER_SET,
   CONNECTING,
   CONNECTED,
+  TRANSFERRING,
 }
 
 export enum PeerEvent {
@@ -22,6 +25,7 @@ export enum PeerEvent {
   OFFER_ACCEPTED = "offerAccepted",
   ANSWER_CREATED = "answerCreated",
   PEER_CONNECTED = "peerConnected",
+  INIT_TRANSFER = "initTransfer",
 }
 
 export enum SignalingEvent {

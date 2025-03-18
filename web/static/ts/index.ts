@@ -11,3 +11,7 @@ document.querySelectorAll(".app-input-container").forEach((container) => {
     }
   });
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  lucide.createIcons();
+});

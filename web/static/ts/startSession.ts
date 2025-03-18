@@ -3,7 +3,12 @@ import {
   handleCreateOffer,
   handleDisplayStatusChange,
 } from "./lib/handlers.js";
-import { type SDPEventMessage, WebRTCPeer, peerEmitter } from "./lib/webrtc.js";
+import {
+  type InitTransferMessage,
+  type SDPEventMessage,
+  WebRTCPeer,
+  peerEmitter,
+} from "./lib/webrtc.js";
 import { WSConnect } from "./lib/websocket.js";
 
 declare var htmx: any;
@@ -39,4 +44,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     localPeer = new WebRTCPeer(true);
   }
   await handleCreateOffer(localPeer);
+});
+
+peerEmitter.addEventListener(PeerEvent.INIT_TRANSFER, (event) => {
+  const customEvent = event as CustomEvent<InitTransferMessage>;
+  localPeer?.initTransfer(customEvent.detail.file);
 });
