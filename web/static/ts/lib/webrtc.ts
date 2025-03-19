@@ -80,7 +80,10 @@ export class WebRTCPeer {
           peerEmitter.dispatchPeerEvent(PeerEvent.PEER_CONNECTED, {});
           break;
         case "disconnected":
-          console.log("Peer disconnected");
+          peerEmitter.dispatchPeerEvent(
+            PeerEvent.CONNECTION_STATUS_CHANGED,
+            {},
+          );
           break;
         default:
           break;

@@ -1,5 +1,8 @@
 import { PeerEvent, SignalingEvent } from "./lib/constants.js";
-import { handleDisplayStatusChange } from "./lib/handlers.js";
+import {
+  handleCreateOffer,
+  handleDisplayStatusChange,
+} from "./lib/handlers.js";
 import type {
   FileUpdateEvent,
   InitTransferMessage,
@@ -10,36 +13,60 @@ import { addFileDiv } from "./lib/utils.js";
 import { peerEmitter, WebRTCPeer } from "./lib/webrtc.js";
 import { signallingEmitter, WSConnect } from "./lib/websocket.js";
 
+lucide.createIcons();
+
 let localPeer: WebRTCPeer | null = null;
-let signalingChannel: WSConnect = new WSConnect();
+let signallingChannel: WSConnect = new WSConnect();
 
 document.addEventListener("DOMContentLoaded", async () => {
-  if (localPeer === null) {
-    // Created an answerer peer
-    localPeer = new WebRTCPeer(false);
+  const peerType = document.getElementById("peer-type") as HTMLInputElement;
+  if (peerType === null) {
+    throw new Error("Cannot initialize session peer");
+  }
+  if (peerType.value === "offer") {
+    localPeer = new WebRTCPeer(true);
+    await handleCreateOffer(localPeer);
+  } else {
+    localPeer = new WebRTCPeer();
   }
 });
 
 const startBtn = document.getElementById("session-start-btn")!;
-startBtn.addEventListener("click", async () => {
-  const sessionInput = document.getElementById("sessionId") as HTMLInputElement;
-  if (sessionInput.value === "") {
-    alert("Please enter a session ID");
-    return;
-  }
-  signalingChannel.getSessionData(sessionInput.value);
+if (startBtn !== null) {
+  startBtn.addEventListener("click", async () => {
+    const sessionInput = document.getElementById(
+      "sessionId",
+    ) as HTMLInputElement;
+    if (sessionInput.value === "") {
+      alert("Please enter a session ID");
+      return;
+    }
+    signallingChannel.getSessionData(sessionInput.value);
+  });
+}
+
+peerEmitter.addEventListener(PeerEvent.OFFER_CREATED, (event: Event) => {
+  const { detail } = event as CustomEvent<SDPEventMessage>;
+  const sessionIdInput = document.getElementById(
+    "sessionId",
+  ) as HTMLInputElement;
+  signallingChannel.sendOffer(detail.sdp, sessionIdInput.value);
 });
 
 peerEmitter.addEventListener(PeerEvent.OFFER_ACCEPTED, (event: Event) => {
-  const customevent = event as CustomEvent<SDPEventMessage>;
+  const { detail } = event as CustomEvent<SDPEventMessage>;
   const sessionInput = document.getElementById("sessionId") as HTMLInputElement;
+  signallingChannel.sendAnswer(detail.sdp, sessionInput.value);
+});
 
-  signalingChannel.sendAnswer(customevent.detail.sdp, sessionInput.value);
+peerEmitter.addEventListener(PeerEvent.ANSWER_CREATED, async (event: Event) => {
+  const { detail } = event as CustomEvent<SDPEventMessage>;
+  await localPeer!.acceptAnswer(detail.sdp);
 });
 
 peerEmitter.addEventListener(PeerEvent.PEER_CONNECTED, async (event: Event) => {
   handleDisplayStatusChange("Connected to peer");
-  signalingChannel.close();
+  signallingChannel.close();
   const sessionInput = document.getElementById("sessionId") as HTMLInputElement;
   htmx.ajax("GET", "/session/connected/" + sessionInput.value + "/", {
     target: "#main-container",
@@ -47,23 +74,9 @@ peerEmitter.addEventListener(PeerEvent.PEER_CONNECTED, async (event: Event) => {
   });
 });
 
-signallingEmitter.addEventListener(
-  SignalingEvent.OFFER_FETCHED,
-  async (event: Event) => {
-    if (localPeer === null) {
-      localPeer = new WebRTCPeer(false);
-    }
-    const customEvent = event as CustomEvent<{
-      offerSDP: RTCSessionDescription;
-    }>;
-    await localPeer.acceptOffer(customEvent.detail.offerSDP);
-    await localPeer.createAnswer();
-  },
-);
-
 peerEmitter.addEventListener(PeerEvent.INIT_TRANSFER, (event) => {
-  const customEvent = event as CustomEvent<InitTransferMessage>;
-  localPeer?.initTransfer(customEvent.detail.file, customEvent.detail.fileId);
+  const { detail } = event as CustomEvent<InitTransferMessage>;
+  localPeer?.initTransfer(detail.file, detail.fileId);
 });
 
 peerEmitter.addEventListener(PeerEvent.FILE_UPDATE, (event) => {
@@ -86,8 +99,23 @@ peerEmitter.addEventListener(PeerEvent.FILE_UPDATE, (event) => {
   }
 });
 
+peerEmitter.addEventListener(PeerEvent.CONNECTION_STATUS_CHANGED, () => {
+  window.location.reload();
+});
+
 peerEmitter.addEventListener(PeerEvent.TRANSFER_INITIATED, (event) => {
   const customEvent = event as CustomEvent<ReceiveTransferMessage>;
   const { fileName, fileId } = customEvent.detail;
   addFileDiv(fileId, fileName);
 });
+
+signallingEmitter.addEventListener(
+  SignalingEvent.OFFER_FETCHED,
+  async (event: Event) => {
+    const { detail } = event as CustomEvent<{
+      offerSDP: RTCSessionDescription;
+    }>;
+    await localPeer!.acceptOffer(detail.offerSDP);
+    await localPeer!.createAnswer();
+  },
+);

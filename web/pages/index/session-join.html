@@ -1,4 +1,11 @@
 {{ template "top" .}}
+<input
+    id="peer-type"
+    type="text"
+    disabled="true"
+    value="answer"
+    hidden="true"
+/>
 <div class="flex flex-col gap-5 w-full items-center m-auto">
     <div class="flex justify-center gap-4 text-3xl font-bold">
         <span>[*</span>
@@ -19,6 +26,6 @@
     <button class="app-button" id="session-start-btn">Join Session</button>
 </div>
 
-<script src="/static/js/joinSession.js" type="module"></script>
+<script src="/static/js/session.js" type="module"></script>
 
 {{ template "bottom" .}}
