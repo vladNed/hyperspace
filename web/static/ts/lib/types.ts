@@ -17,11 +17,22 @@ export interface AnswerDataResponse {
   timestamp: string;
 }
 
-export interface FileMetadata {
-  totalSize: number;
-  name: string;
+/** Raw message structure of a message sent through the data channel between peers */
+export interface PeerMessage {
+  /** Message type is used to map to state management */
+  type: PeerMessageType;
+
+  /** Body of the message */
+  body?: InitPayload | FilePayload | FileError;
+}
+
+/** Payload sent to the peer to initialize the transfer */
+export interface InitPayload {
+  fileName: string;
   fileType: string;
+  fileSize: number;
   hash: string;
+  totalChunks: number;
 }
 
 export enum PeerMessageType {
@@ -33,23 +44,20 @@ export enum PeerMessageType {
 }
 
 export interface FilePayload {
-  data: Blob;
+  data: ArrayBuffer;
   hash: string;
+  stage: number;
+  totalStages: number;
 }
 
 export interface FileError {
   msg: string;
 }
 
-export interface PeerMessage {
-  type: PeerMessageType;
-  body: FileMetadata | FilePayload | FileError | null;
-}
-
 export interface TransferSession {
-  metadata: FileMetadata;
-  file: File | null;
-  dataSent: number;
-  totalData: number;
-  chunks?: Blob[];
+  metadata: InitPayload;
+  chunks: Blob[];
+  chunksIndex: number;
+  dataSent?: number;
+  file?: File;
 }

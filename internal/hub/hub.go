@@ -26,7 +26,6 @@ func NewHub() *Hub {
 
 func GetInstance() *Hub {
 	if hub == nil {
-		log.Println("Was nil")
 		hub = NewHub()
 	}
 
@@ -34,7 +33,6 @@ func GetInstance() *Hub {
 }
 
 func (h *Hub) AddSession(conn *websocket.Conn, sessionId string) {
-	log.Println("Adding conn for: ", sessionId)
 	h.connections[sessionId] = conn
 }
 
@@ -53,7 +51,6 @@ func (h *Hub) GetConnections() map[string]*websocket.Conn {
 }
 
 func (h *Hub) GetConnBySessionId(sessionId string) *websocket.Conn {
-	log.Println("Getting connection for ", sessionId)
 	value, ok := h.connections[sessionId]
 	if !ok {
 		log.Println("conn for sess not found", sessionId)

@@ -6,7 +6,10 @@ export const ICE_SERVERS = {
   ],
 };
 
-export const CHUNK_SIZE = 20 * 1024 * 1024;
+/**
+ * Standard WebRTC message size
+ */
+export const CHUNK_SIZE = 64 * 1024;
 
 export enum PeerState {
   IDLE,
@@ -17,7 +20,8 @@ export enum PeerState {
   ANSWER_SET,
   CONNECTING,
   CONNECTED,
-  TRANSFERRING,
+  RECEIVING,
+  SENDING,
 }
 
 export enum PeerEvent {

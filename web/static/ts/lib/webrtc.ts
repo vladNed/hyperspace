@@ -1,6 +1,6 @@
 import { CHUNK_SIZE, ICE_SERVERS, PeerEvent, PeerState } from "./constants.js";
 import {
-  type FileMetadata,
+  type InitPayload,
   type FilePayload,
   PeerMessageType,
   type PeerMessage,
@@ -94,6 +94,8 @@ export class WebRTCPeer {
       "hypserspace-protocol",
     );
 
+    dataChannel.binaryType = "arraybuffer";
+
     dataChannel.onclose = (event: Event | undefined) => {
       console.log("Data Channel Closed", event);
     };
@@ -109,14 +111,15 @@ export class WebRTCPeer {
   private setAnswererDataChannel(): void {
     this.peerConnection.ondatachannel = (event: RTCDataChannelEvent) => {
       this.dataChannel = event.channel;
+      this.dataChannel.binaryType = "arraybuffer";
 
       this.dataChannel.onclose = (event: Event | undefined) => {
         console.log("Data Channel Closed", event);
       };
 
-      this.dataChannel.onmessage = (event: MessageEvent | undefined) => {
+      this.dataChannel.onmessage = async (event: MessageEvent | undefined) => {
         if (!event) return;
-        this.handleOnMessageEvent(event);
+        await this.handleOnMessageEvent(event);
       };
     };
   }
@@ -170,43 +173,51 @@ export class WebRTCPeer {
     const transferSession: TransferSession = {
       metadata,
       file,
-      totalData: file.size,
       dataSent: 0,
+      chunksIndex: 0,
+      chunks: [],
     };
     this.transferSession = transferSession;
-    this.state = PeerState.TRANSFERRING;
+    this.state = PeerState.SENDING;
 
     if (this.dataChannel === null) {
       throw new Error("Data channel not set");
     }
 
     const peerMessage: PeerMessage = {
-      type: PeerMessageType.INIT.valueOf(),
+      type: PeerMessageType.INIT,
       body: metadata,
     };
     this.dataChannel.send(JSON.stringify(peerMessage));
   }
 
-  private handleOnMessageEvent(event: MessageEvent): void {
-    const peerMessage: PeerMessage = JSON.parse(event.data);
-    switch (peerMessage.type) {
-      case PeerMessageType.INIT:
-        this.handleInitMessage(peerMessage.body as FileMetadata);
+  /**
+   * Main handler for onmessage events from the data channel. The handler
+   * will switch between the different states of the peer to handle the
+   * incoming messages.
+   */
+  private async handleOnMessageEvent(event: MessageEvent): Promise<void> {
+    switch (this.state) {
+      case PeerState.CONNECTED:
+        const peerMessage = JSON.parse(
+          (event as MessageEvent<string>).data,
+        ) as PeerMessage;
+        this.handleInitMessage(peerMessage.body as InitPayload);
         break;
-      case PeerMessageType.PAYLOAD:
-        this.handlePayloadMessage(peerMessage.body as FilePayload);
+      case PeerState.RECEIVING:
+        this.handlePayloadMessage((event as MessageEvent<ArrayBuffer>).data);
         break;
-      case PeerMessageType.ERROR:
-        this.handleErrorMessage();
-        break;
-      case PeerMessageType.OK:
-        this.handleOkMessage();
-        break;
-      case PeerMessageType.DONE:
-        this.handleDoneMessage();
+      case PeerState.SENDING:
+        const eventPayload = event as MessageEvent<string>;
+        const msg = JSON.parse(eventPayload.data) as PeerMessage;
+        if (msg.type === PeerMessageType.OK) {
+          await this.handleOkMessage();
+        } else {
+          console.error("Unknown message type", msg);
+        }
         break;
       default:
-        console.error("Unknown message type", peerMessage);
+        console.error("peer cannot accept incoming messages:", this.state);
         break;
     }
   }
@@ -224,89 +235,100 @@ export class WebRTCPeer {
   }
 
   private completeTransfer(): void {
-    const doneMsg: PeerMessage = {
-      type: PeerMessageType.DONE,
-      body: null,
-    };
-
-    this.dataChannel!.send(JSON.stringify(doneMsg));
+    const eof = new ArrayBuffer(0);
+    this.dataChannel!.send(eof);
     this.state = PeerState.CONNECTED;
     this.transferSession = null;
   }
 
-  private sendChunk(chunk: FilePayload): void {
-    const chunkMsg: PeerMessage = {
-      type: PeerMessageType.PAYLOAD,
-      body: chunk,
-    };
-
-    this.dataChannel!.send(JSON.stringify(chunkMsg));
+  private sendChunk(chunk: ArrayBuffer): void {
+    this.dataChannel!.send(chunk);
   }
 
-  private handleInitMessage(payload: FileMetadata): void {
-    if (!this.requirePeerState(PeerState.CONNECTED)) return;
-    this.transferSession = {
-      metadata: payload,
-      file: null,
-      dataSent: 0,
-      totalData: 0,
-    };
-    this.state = PeerState.TRANSFERRING;
-    const okMsg: PeerMessage = {
-      type: PeerMessageType.OK,
-      body: null,
-    };
+  private sendOk(): void {
+    const okMsg: PeerMessage = { type: PeerMessageType.OK };
     this.dataChannel!.send(JSON.stringify(okMsg));
   }
 
-  private handlePayloadMessage(payload: FilePayload): void {
-    if (!this.requirePeerState(PeerState.TRANSFERRING)) return;
-    const data = payload.data;
-    const sess = this.transferSession!;
-    sess.dataSent += data.size;
-    if (sess.chunks === undefined) {
-      sess.chunks = [];
-    }
-    sess.chunks!.push(data);
-
-    const okMsgPayload: PeerMessage = {
-      type: PeerMessageType.OK,
-      body: null,
+  /**
+   * Handles initiating the transfer session and preparing the peer
+   * to receive the chunks.
+   * @param payload The transfer metadata payload
+   */
+  private handleInitMessage(payload: InitPayload): void {
+    this.transferSession = {
+      metadata: payload,
+      chunksIndex: 0,
+      chunks: [] as Blob[],
     };
-    this.dataChannel!.send(JSON.stringify(okMsgPayload));
+    this.state = PeerState.RECEIVING;
+    this.dataChannel!.send(
+      JSON.stringify({ type: PeerMessageType.OK } as PeerMessage),
+    );
   }
 
-  private handleErrorMessage(): void {
-    if (!this.requirePeerState(PeerState.TRANSFERRING)) return;
-    this.state = PeerState.CONNECTED;
-    this.transferSession = null;
-  }
-
-  private handleOkMessage(): void {
-    if (!this.requirePeerState(PeerState.TRANSFERRING)) return;
-    const { totalData, dataSent, file, metadata } = this.transferSession!;
-    if (totalData === dataSent) {
-      this.completeTransfer();
+  /**
+   * Handles incoming chunk payloads from the peer. Acknowledges the
+   * receipt of the chunk and prepares to receive the next chunk.
+   * @param payload A chunk of a file
+   */
+  private handlePayloadMessage(payload: ArrayBuffer): void {
+    if (payload.byteLength === 0) {
+      console.log("EOF Received.");
+      this.handleEOF();
       return;
     }
 
-    const nextChunkEnd = Math.min(dataSent + CHUNK_SIZE, totalData);
-    const chunk = file!.slice(dataSent, nextChunkEnd);
-
-    this.sendChunk({ data: chunk, hash: metadata.hash });
-    this.transferSession!.dataSent += chunk.size;
+    const blob = new Blob([payload]);
+    this.transferSession!.chunks!.push(blob);
+    this.transferSession!.chunksIndex++;
+    this.sendOk();
   }
 
-  private handleDoneMessage(): void {
-    if (!this.requirePeerState(PeerState.TRANSFERRING)) return;
+  /**
+   * Handles the OK message from the peer, indicating that the peer has
+   * received the chunk and is ready for the next chunk.
+   */
+  private async handleOkMessage(): Promise<void> {
+    const { dataSent, metadata, file } = this.transferSession!;
+    if (dataSent === metadata.fileSize) {
+      this.completeTransfer();
+      return;
+    }
+    const nextChunkEnd = Math.min(dataSent! + CHUNK_SIZE, metadata.fileSize);
+    const chunk = file!.slice(dataSent, nextChunkEnd, metadata.fileType);
+    const payloadData = await chunk.arrayBuffer();
+    console.log(
+      `Sending chunk ${this.transferSession!.chunksIndex} | ${metadata.totalChunks}`,
+    );
+    this.sendChunk(payloadData);
+    this.transferSession!.dataSent = nextChunkEnd;
+    this.transferSession!.chunksIndex++;
+  }
+
+  private handleEOF(): void {
     const { chunks, metadata } = this.transferSession!;
-    const file = new File(chunks!, metadata.name, {
-      type: metadata.fileType,
-    });
+    const blob = new Blob(chunks!, { type: metadata.fileType });
+    if (blob.size !== metadata.fileSize) {
+      console.error(
+        `Chunks: ${chunks?.length}, Blob size: ${blob.size}, Meta total size: ${metadata.fileSize}`,
+      );
+      throw new Error("File size mismatch");
+    }
 
-    console.log(file);
-
+    this.downloadFile(blob, metadata);
     this.state = PeerState.CONNECTED;
     this.transferSession = null;
+  }
+
+  private downloadFile(file: Blob, metadata: InitPayload) {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = metadata.fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 }

@@ -25,7 +25,7 @@ export class WSConnect {
   private state: SignalingState = SignalingState.IDLE;
 
   constructor() {
-    this.client = new WebSocket("ws://localhost:8080/ws/v1/session/");
+    this.client = new WebSocket("ws://192.168.1.129:8080/ws/v1/session/");
 
     this.client.onopen = () => {
       console.log("Connected to signaling server");
