@@ -30,6 +30,9 @@ export enum PeerEvent {
   ANSWER_CREATED = "answerCreated",
   PEER_CONNECTED = "peerConnected",
   INIT_TRANSFER = "initTransfer",
+  CONNECTION_STATUS_CHANGED = "connectionStatusChanged",
+  FILE_UPDATE = "fileUpdate",
+  TRANSFER_INITIATED = "transferInitiated",
 }
 
 export enum SignalingEvent {
@@ -42,4 +45,12 @@ export enum SignalingState {
   WAITING_FOR_ANSWER,
   GATHERING,
   ANSWER_SENT,
+}
+
+export enum PeerMessageType {
+  INIT = 0,
+  PAYLOAD = 1,
+  DONE = 2,
+  OK = 200,
+  ERROR = 400,
 }

@@ -1,3 +1,5 @@
+import { PeerMessageType } from "./constants";
+
 export interface SessionResponse<T> {
   type: "ok" | "error";
   payload: T;
@@ -35,14 +37,6 @@ export interface InitPayload {
   totalChunks: number;
 }
 
-export enum PeerMessageType {
-  INIT = 0,
-  PAYLOAD = 1,
-  DONE = 2,
-  OK = 200,
-  ERROR = 400,
-}
-
 export interface FilePayload {
   data: ArrayBuffer;
   hash: string;
@@ -60,4 +54,25 @@ export interface TransferSession {
   chunksIndex: number;
   dataSent?: number;
   file?: File;
+  fileId: string;
+}
+
+export interface SDPEventMessage {
+  sdp: RTCSessionDescriptionInit;
+}
+
+export interface InitTransferMessage {
+  file: File;
+  fileId: string;
+}
+
+export interface ReceiveTransferMessage {
+  fileId: string;
+  fileName: string;
+}
+
+export interface FileUpdateEvent {
+  fileId: string;
+  totalData: number;
+  currentData: number;
 }

@@ -1,12 +1,19 @@
-import { CHUNK_SIZE, ICE_SERVERS, PeerEvent, PeerState } from "./constants.js";
 import {
-  type InitPayload,
-  type FilePayload,
+  CHUNK_SIZE,
+  ICE_SERVERS,
+  PeerEvent,
   PeerMessageType,
-  type PeerMessage,
-  type TransferSession,
+  PeerState,
+} from "./constants.js";
+import type {
+  InitPayload,
+  PeerMessage,
+  TransferSession,
+  SDPEventMessage,
+  FileUpdateEvent,
+  ReceiveTransferMessage,
 } from "./types.js";
-import { preProcessFile } from "./utils.js";
+import { getFileID, preProcessFile } from "./utils.js";
 
 export class PeerEmitter extends EventTarget {
   dispatchPeerEvent<T>(name: PeerEvent, detail: T): void {
@@ -15,14 +22,6 @@ export class PeerEmitter extends EventTarget {
 }
 
 export const peerEmitter = new PeerEmitter();
-
-export interface SDPEventMessage {
-  sdp: RTCSessionDescriptionInit;
-}
-
-export interface InitTransferMessage {
-  file: File;
-}
 
 export class WebRTCPeer {
   private peerConnection: RTCPeerConnection;
@@ -166,7 +165,7 @@ export class WebRTCPeer {
     }
   }
 
-  public async initTransfer(file: File): Promise<void> {
+  public async initTransfer(file: File, fileId: string): Promise<void> {
     if (this.state !== PeerState.CONNECTED && this.transferSession !== null)
       return;
     const metadata = await preProcessFile(file);
@@ -176,6 +175,7 @@ export class WebRTCPeer {
       dataSent: 0,
       chunksIndex: 0,
       chunks: [],
+      fileId,
     };
     this.transferSession = transferSession;
     this.state = PeerState.SENDING;
@@ -197,41 +197,43 @@ export class WebRTCPeer {
    * incoming messages.
    */
   private async handleOnMessageEvent(event: MessageEvent): Promise<void> {
-    switch (this.state) {
-      case PeerState.CONNECTED:
-        const peerMessage = JSON.parse(
-          (event as MessageEvent<string>).data,
-        ) as PeerMessage;
-        this.handleInitMessage(peerMessage.body as InitPayload);
-        break;
-      case PeerState.RECEIVING:
-        this.handlePayloadMessage((event as MessageEvent<ArrayBuffer>).data);
-        break;
-      case PeerState.SENDING:
-        const eventPayload = event as MessageEvent<string>;
-        const msg = JSON.parse(eventPayload.data) as PeerMessage;
-        if (msg.type === PeerMessageType.OK) {
-          await this.handleOkMessage();
-        } else {
-          console.error("Unknown message type", msg);
-        }
-        break;
-      default:
-        console.error("peer cannot accept incoming messages:", this.state);
-        break;
+    const handlers = new Map([
+      [
+        PeerState.CONNECTED,
+        async () => {
+          const peerMessage = JSON.parse(
+            (event as MessageEvent<string>).data,
+          ) as PeerMessage;
+          await this.handleInitMessage(peerMessage.body as InitPayload);
+        },
+      ],
+      [
+        PeerState.RECEIVING,
+        async () => {
+          this.handlePayloadMessage((event as MessageEvent<ArrayBuffer>).data);
+        },
+      ],
+      [
+        PeerState.SENDING,
+        async () => {
+          const eventPayload = event as MessageEvent<string>;
+          const msg = JSON.parse(eventPayload.data) as PeerMessage;
+          if (msg.type === PeerMessageType.OK) {
+            await this.handleOkMessage();
+          } else {
+            console.error("Unknown message type", msg);
+          }
+        },
+      ],
+    ]);
+
+    const handler = handlers.get(this.state);
+    if (handler === undefined) {
+      console.error("peer cannot accept incoming");
+      return;
     }
-  }
 
-  private requirePeerState(state: PeerState): boolean {
-    if (this.state === state) return true;
-
-    const errorMsg: PeerMessage = {
-      type: PeerMessageType.ERROR,
-      body: { msg: "Peer in wrong state to start new transfer" },
-    };
-    this.dataChannel!.send(JSON.stringify(errorMsg));
-
-    return false;
+    await handler();
   }
 
   private completeTransfer(): void {
@@ -255,15 +257,25 @@ export class WebRTCPeer {
    * to receive the chunks.
    * @param payload The transfer metadata payload
    */
-  private handleInitMessage(payload: InitPayload): void {
+  private async handleInitMessage(payload: InitPayload): Promise<void> {
+    const fileId = await getFileID(payload.hash); // TODO: Generate a unique file ID using other means
     this.transferSession = {
       metadata: payload,
       chunksIndex: 0,
       chunks: [] as Blob[],
+      fileId,
     };
     this.state = PeerState.RECEIVING;
     this.dataChannel!.send(
       JSON.stringify({ type: PeerMessageType.OK } as PeerMessage),
+    );
+
+    peerEmitter.dispatchPeerEvent<ReceiveTransferMessage>(
+      PeerEvent.TRANSFER_INITIATED,
+      {
+        fileId,
+        fileName: payload.fileName,
+      },
     );
   }
 
@@ -278,6 +290,11 @@ export class WebRTCPeer {
       this.handleEOF();
       return;
     }
+    peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {
+      fileId: this.transferSession!.fileId,
+      currentData: this.transferSession!.chunksIndex * CHUNK_SIZE,
+      totalData: this.transferSession!.metadata.fileSize,
+    });
 
     const blob = new Blob([payload]);
     this.transferSession!.chunks!.push(blob);
@@ -290,7 +307,7 @@ export class WebRTCPeer {
    * received the chunk and is ready for the next chunk.
    */
   private async handleOkMessage(): Promise<void> {
-    const { dataSent, metadata, file } = this.transferSession!;
+    const { dataSent, metadata, file, fileId } = this.transferSession!;
     if (dataSent === metadata.fileSize) {
       this.completeTransfer();
       return;
@@ -298,12 +315,14 @@ export class WebRTCPeer {
     const nextChunkEnd = Math.min(dataSent! + CHUNK_SIZE, metadata.fileSize);
     const chunk = file!.slice(dataSent, nextChunkEnd, metadata.fileType);
     const payloadData = await chunk.arrayBuffer();
-    console.log(
-      `Sending chunk ${this.transferSession!.chunksIndex} | ${metadata.totalChunks}`,
-    );
     this.sendChunk(payloadData);
     this.transferSession!.dataSent = nextChunkEnd;
     this.transferSession!.chunksIndex++;
+    peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {
+      fileId,
+      currentData: nextChunkEnd,
+      totalData: metadata.fileSize,
+    });
   }
 
   private handleEOF(): void {

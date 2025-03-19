@@ -1,17 +1,19 @@
-import { PeerEvent } from "./lib/constants.js";
+import { PeerEvent, PeerState } from "./lib/constants.js";
 import {
   handleCreateOffer,
   handleDisplayStatusChange,
 } from "./lib/handlers.js";
-import {
-  type InitTransferMessage,
-  type SDPEventMessage,
-  WebRTCPeer,
-  peerEmitter,
-} from "./lib/webrtc.js";
+import type {
+  FileUpdateEvent,
+  InitTransferMessage,
+  ReceiveTransferMessage,
+  SDPEventMessage,
+} from "./lib/types.js";
+import { addFileDiv } from "./lib/utils.js";
+import { WebRTCPeer, peerEmitter } from "./lib/webrtc.js";
 import { WSConnect } from "./lib/websocket.js";
 
-declare var htmx: any;
+lucide.createIcons();
 
 let localPeer: WebRTCPeer | null = null;
 let signalingChannel: WSConnect = new WSConnect();
@@ -48,5 +50,35 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 peerEmitter.addEventListener(PeerEvent.INIT_TRANSFER, (event) => {
   const customEvent = event as CustomEvent<InitTransferMessage>;
-  localPeer?.initTransfer(customEvent.detail.file);
+  localPeer?.initTransfer(customEvent.detail.file, customEvent.detail.fileId);
+});
+
+peerEmitter.addEventListener(PeerEvent.CONNECTION_STATUS_CHANGED, () => {
+  window.location.reload();
+});
+
+peerEmitter.addEventListener(PeerEvent.FILE_UPDATE, (event) => {
+  const eventMessage = event as CustomEvent<FileUpdateEvent>;
+  const { currentData, totalData, fileId } = eventMessage.detail;
+  const fileDiv = document.getElementById(fileId) as HTMLDivElement;
+  const progressBar = fileDiv.querySelector(
+    ".metadata  .progress-top  .progress",
+  ) as HTMLDivElement;
+
+  const progress = Math.round((currentData / totalData) * 100);
+
+  progressBar.innerText = `${progress}%`;
+  progressBar.style.width = `${progress}%`;
+
+  if (progress === 100) {
+    const icon = fileDiv.querySelector(".transfer-icon");
+    icon!.innerHTML = '<i data-lucide="check" class="size-6"></i>';
+    lucide.createIcons();
+  }
+});
+
+peerEmitter.addEventListener(PeerEvent.TRANSFER_INITIATED, (event) => {
+  const customEvent = event as CustomEvent<ReceiveTransferMessage>;
+  const { fileName, fileId } = customEvent.detail;
+  addFileDiv(fileId, fileName);
 });

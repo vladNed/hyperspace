@@ -7,10 +7,11 @@ import type {
   AnswerDataResponse,
   OfferDataResponse,
   Response,
+  SDPEventMessage,
   SessionResponse,
 } from "./types.js";
 import { decodeSDP, encodeSDP } from "./utils.js";
-import { peerEmitter, SDPEventMessage } from "./webrtc.js";
+import { peerEmitter } from "./webrtc.js";
 
 export class SignallingEmitter extends EventTarget {
   dispatchPeerEvent<T>(name: SignalingEvent, detail: T): void {
