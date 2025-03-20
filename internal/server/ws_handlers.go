@@ -99,7 +99,7 @@ func parseMessage(rawMsg SessionMessage, conn *websocket.Conn) (any, error) {
 			return nil, fmt.Errorf("A server error ocurred")
 		}
 
-		getOfferResp := &SessionResponse{OfferSDP: offerRequest.OfferSDP}
+		getOfferResp := &SessionResponse{OfferSDP: offerRequest.OfferSDP, PubKey: offerRequest.PubKey}
 		return getOfferResp, nil
 	case Answer:
 		var answerPayload AnswerRequest

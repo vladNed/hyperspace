@@ -11,12 +11,14 @@ export interface Response {
 
 export interface OfferDataResponse {
   offerSDP: string;
+  pubKey: string;
 }
 
 export interface AnswerDataResponse {
   answerSDP: string;
   sessionId: string;
   timestamp: string;
+  pubKey: string;
 }
 
 /** Raw message structure of a message sent through the data channel between peers */

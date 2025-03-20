@@ -26,7 +26,7 @@ export class WSConnect {
   private state: SignalingState = SignalingState.IDLE;
 
   constructor() {
-    this.client = new WebSocket("ws://192.168.1.129:8080/ws/v1/session/");
+    this.client = new WebSocket("ws://localhost:8080/ws/v1/session/");
 
     this.client.onopen = () => {
       console.log("Connected to signaling server");
@@ -59,21 +59,19 @@ export class WSConnect {
             const offerSDP = decodeSDP(offerData.offerSDP);
             signallingEmitter.dispatchPeerEvent(SignalingEvent.OFFER_FETCHED, {
               offerSDP,
+              pubKey: offerData.pubKey,
             });
           }
           break;
         case SignalingState.WAITING_FOR_ANSWER:
           const answerData = JSON.parse(event.data) as AnswerDataResponse;
-          peerEmitter.dispatchPeerEvent<SDPEventMessage>(
-            PeerEvent.ANSWER_CREATED,
-            {
-              sdp: decodeSDP(answerData.answerSDP),
-            },
-          );
+          peerEmitter.dispatchPeerEvent(PeerEvent.ANSWER_CREATED, {
+            sdp: decodeSDP(answerData.answerSDP),
+            pubKey: answerData.pubKey,
+          });
 
           break;
         default: {
-          console.log(event, this.state);
           handleDisplayStatusChange("Left in unkown state. Please refresh.");
           break;
         }
@@ -81,13 +79,18 @@ export class WSConnect {
     };
   }
 
-  public sendOffer(sdp: RTCSessionDescriptionInit, sessionId: string) {
+  public sendOffer(
+    sdp: RTCSessionDescriptionInit,
+    sessionId: string,
+    pubKey: string,
+  ) {
     const payload = {
       type: "offer",
       payload: {
-        sessionId: sessionId,
+        sessionId,
         offerSDP: encodeSDP(sdp),
         timestamp: new Date().toISOString(),
+        pubKey,
       },
     };
 
@@ -109,13 +112,18 @@ export class WSConnect {
     handleDisplayStatusChange("Fetching session data");
   }
 
-  public sendAnswer(sdp: RTCSessionDescriptionInit, sessionId: string) {
+  public sendAnswer(
+    sdp: RTCSessionDescriptionInit,
+    sessionId: string,
+    pubKey: string,
+  ) {
     const payload = {
       type: "answer",
       payload: {
         sessionId,
         answerSDP: encodeSDP(sdp),
         timestamp: new Date().toISOString(),
+        pubKey,
       },
     };
 

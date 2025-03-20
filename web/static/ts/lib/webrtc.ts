@@ -1,3 +1,4 @@
+import { Identity } from "./auth.js";
 import {
   CHUNK_SIZE,
   ICE_SERVERS,
@@ -29,7 +30,10 @@ export class WebRTCPeer {
   private state: PeerState = PeerState.IDLE;
   private transferSession: TransferSession | null = null;
 
-  constructor(isOfferer: boolean = false) {
+  constructor(
+    isOfferer: boolean = false,
+    private identity: Identity,
+  ) {
     this.peerConnection = new RTCPeerConnection(ICE_SERVERS);
     if (isOfferer) {
       this.dataChannel = this.setOffererDataChannel();
@@ -213,7 +217,9 @@ export class WebRTCPeer {
       [
         PeerState.RECEIVING,
         async () => {
-          this.handlePayloadMessage((event as MessageEvent<ArrayBuffer>).data);
+          await this.handlePayloadMessage(
+            (event as MessageEvent<ArrayBuffer>).data,
+          );
         },
       ],
       [
@@ -246,8 +252,9 @@ export class WebRTCPeer {
     this.transferSession = null;
   }
 
-  private sendChunk(chunk: ArrayBuffer): void {
-    this.dataChannel!.send(chunk);
+  private async sendChunk(chunk: ArrayBuffer): Promise<void> {
+    let encryptedChunk = await this.identity.encrypt(chunk);
+    this.dataChannel!.send(encryptedChunk);
   }
 
   private sendOk(): void {
@@ -287,19 +294,19 @@ export class WebRTCPeer {
    * receipt of the chunk and prepares to receive the next chunk.
    * @param payload A chunk of a file
    */
-  private handlePayloadMessage(payload: ArrayBuffer): void {
+  private async handlePayloadMessage(payload: ArrayBuffer): Promise<void> {
     if (payload.byteLength === 0) {
-      console.log("EOF Received.");
       this.handleEOF();
       return;
     }
+    const decryptedPayload = await this.identity.decrypt(payload);
     peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {
       fileId: this.transferSession!.fileId,
       currentData: this.transferSession!.chunksIndex * CHUNK_SIZE,
       totalData: this.transferSession!.metadata.fileSize,
     });
 
-    const blob = new Blob([payload]);
+    const blob = new Blob([decryptedPayload]);
     this.transferSession!.chunks!.push(blob);
     this.transferSession!.chunksIndex++;
     this.sendOk();
@@ -318,7 +325,7 @@ export class WebRTCPeer {
     const nextChunkEnd = Math.min(dataSent! + CHUNK_SIZE, metadata.fileSize);
     const chunk = file!.slice(dataSent, nextChunkEnd, metadata.fileType);
     const payloadData = await chunk.arrayBuffer();
-    this.sendChunk(payloadData);
+    await this.sendChunk(payloadData);
     this.transferSession!.dataSent = nextChunkEnd;
     this.transferSession!.chunksIndex++;
     peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {

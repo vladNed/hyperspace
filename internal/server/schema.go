@@ -20,6 +20,7 @@ type SessionMessage struct {
 type OfferRequest struct {
 	SessionId string `json:"sessionId"`
 	OfferSDP  string `json:"offerSDP"`
+	PubKey    string `json:"pubKey"`
 	Timestamp string `json:"timestamp"`
 }
 
@@ -37,11 +38,13 @@ type SessionRequest struct {
 
 type SessionResponse struct {
 	OfferSDP string `json:"offerSDP"`
+	PubKey   string `json:"pubKey"`
 }
 
 type AnswerRequest struct {
 	SessionId string `json:"sessionId"`
 	AnswerSDP string `json:"answerSDP"`
+	PubKey    string `json:"pubKey"`
 	Timestamp string `json:"timestamp"`
 }
 

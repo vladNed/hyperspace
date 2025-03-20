@@ -1,3 +1,4 @@
+import { Identity, importPubKey } from "./lib/auth.js";
 import { PeerEvent, SignalingEvent } from "./lib/constants.js";
 import {
   handleCreateOffer,
@@ -17,17 +18,19 @@ lucide.createIcons();
 
 let localPeer: WebRTCPeer | null = null;
 let signallingChannel: WSConnect = new WSConnect();
+let identity: Identity | null = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   const peerType = document.getElementById("peer-type") as HTMLInputElement;
   if (peerType === null) {
     throw new Error("Cannot initialize session peer");
   }
+  identity = await Identity.init();
   if (peerType.value === "offer") {
-    localPeer = new WebRTCPeer(true);
+    localPeer = new WebRTCPeer(true, identity);
     await handleCreateOffer(localPeer);
   } else {
-    localPeer = new WebRTCPeer();
+    localPeer = new WebRTCPeer(false, identity);
   }
 });
 
@@ -45,23 +48,32 @@ if (startBtn !== null) {
   });
 }
 
-peerEmitter.addEventListener(PeerEvent.OFFER_CREATED, (event: Event) => {
+peerEmitter.addEventListener(PeerEvent.OFFER_CREATED, async (event: Event) => {
   const { detail } = event as CustomEvent<SDPEventMessage>;
   const sessionIdInput = document.getElementById(
     "sessionId",
   ) as HTMLInputElement;
-  signallingChannel.sendOffer(detail.sdp, sessionIdInput.value);
+  let pubKey = await identity!.exportPubKey();
+  signallingChannel.sendOffer(detail.sdp, sessionIdInput.value, pubKey);
 });
 
-peerEmitter.addEventListener(PeerEvent.OFFER_ACCEPTED, (event: Event) => {
+peerEmitter.addEventListener(PeerEvent.OFFER_ACCEPTED, async (event: Event) => {
   const { detail } = event as CustomEvent<SDPEventMessage>;
   const sessionInput = document.getElementById("sessionId") as HTMLInputElement;
-  signallingChannel.sendAnswer(detail.sdp, sessionInput.value);
+  let pubKey = await identity!.exportPubKey();
+  signallingChannel.sendAnswer(detail.sdp, sessionInput.value, pubKey);
 });
 
 peerEmitter.addEventListener(PeerEvent.ANSWER_CREATED, async (event: Event) => {
-  const { detail } = event as CustomEvent<SDPEventMessage>;
-  await localPeer!.acceptAnswer(detail.sdp);
+  const { detail } = event as CustomEvent<{
+    sdp: RTCSessionDescriptionInit;
+    pubKey: string;
+  }>;
+  let pubKey = await importPubKey(detail.pubKey);
+  await Promise.all([
+    localPeer!.acceptAnswer(detail.sdp),
+    identity!.deriveSharedSecret(pubKey),
+  ]);
 });
 
 peerEmitter.addEventListener(PeerEvent.PEER_CONNECTED, async (event: Event) => {
@@ -114,8 +126,11 @@ signallingEmitter.addEventListener(
   async (event: Event) => {
     const { detail } = event as CustomEvent<{
       offerSDP: RTCSessionDescription;
+      pubKey: string;
     }>;
     await localPeer!.acceptOffer(detail.offerSDP);
     await localPeer!.createAnswer();
+    const pubKey = await importPubKey(detail.pubKey);
+    await identity!.deriveSharedSecret(pubKey);
   },
 );
