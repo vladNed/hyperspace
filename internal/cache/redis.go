@@ -3,8 +3,7 @@ package cache
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
-	"log"
+	"os"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -19,7 +18,7 @@ func NewRedis() *Redis {
 	config := settings.GetInstance()
 
 	// Load CA cert
-	caCert, err := ioutil.ReadFile("./certs/ca.crt")
+	caCert, err := os.ReadFile("./certs/ca.crt")
 	if err != nil {
 		panic(err)
 	}
@@ -46,12 +45,10 @@ func NewRedis() *Redis {
 		},
 	})
 
-	pong, err := client.Ping().Result()
+	_, err = client.Ping().Result()
 	if err != nil {
 		panic(err)
 	}
-
-	log.Println("RDB pong:", pong)
 
 	return &Redis{
 		client: client,

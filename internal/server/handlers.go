@@ -16,10 +16,13 @@ func pingHandler(c *gin.Context) {
 
 func startSessionHandler(c *gin.Context) {
 	newSessionId := utils.GetSessionId()
+	c.Header("Content-Type", "text/html")
 	c.HTML(http.StatusCreated, "session-id.html", gin.H{"sessionId": newSessionId})
 }
 
 func indexHandler(c *gin.Context) {
+	c.Header("Content-Type", "text/html")
+	c.Header("X-Cache", "HIT")
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"title":       "Hyperspace",
 		"description": "Hyperspace is p2p secure file sharing application",
@@ -29,6 +32,7 @@ func indexHandler(c *gin.Context) {
 
 func connectHandler(c *gin.Context) {
 	actionParam := c.Param("action")
+	c.Header("Content-Type", "text/html")
 	switch actionParam {
 	case "start":
 		c.HTML(http.StatusOK, "session-start.html", gin.H{
@@ -52,6 +56,7 @@ func connectHandler(c *gin.Context) {
 
 func sessionCommonHandler(c *gin.Context) {
 	sessionParam := c.Param("sessionId")
+	c.Header("Content-Type", "text/html")
 	c.HTML(http.StatusOK, "session-common.html", gin.H{
 		"sessionId": sessionParam,
 	})

@@ -2,7 +2,6 @@ package hub
 
 import (
 	"context"
-	"log"
 
 	"github.com/gorilla/websocket"
 )
@@ -40,7 +39,6 @@ func (h *Hub) RemoveSession(conn *websocket.Conn) {
 	for key, value := range h.connections {
 		if value == conn {
 			delete(h.connections, key)
-			log.Println("Removed conn for: ", key)
 			return
 		}
 	}
@@ -53,7 +51,6 @@ func (h *Hub) GetConnections() map[string]*websocket.Conn {
 func (h *Hub) GetConnBySessionId(sessionId string) *websocket.Conn {
 	value, ok := h.connections[sessionId]
 	if !ok {
-		log.Println("conn for sess not found", sessionId)
 		return nil
 	}
 	return value

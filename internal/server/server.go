@@ -1,6 +1,7 @@
 package server
 
 import (
+	brotli "github.com/anargu/gin-brotli"
 	"github.com/gin-gonic/gin"
 	"github.com/vladNed/hyperspace/internal/hub"
 )
@@ -31,6 +32,9 @@ func (s *Server) RegisterRoutes() {
 func (s *Server) Run() {
 	s.engine.Static("/static", "./web/static")
 	s.engine.LoadHTMLGlob("./web/pages/**/*")
+
+	s.engine.Use(brotli.Brotli(brotli.DefaultCompression))
+	s.engine.SetTrustedProxies(nil)
 
 	s.RegisterRoutes()
 
