@@ -33,6 +33,7 @@ export enum PeerEvent {
   CONNECTION_STATUS_CHANGED = "connectionStatusChanged",
   FILE_UPDATE = "fileUpdate",
   TRANSFER_INITIATED = "transferInitiated",
+  PEER_STATUS_CHANGED = "peerStatusChanged",
 }
 
 export enum SignalingEvent {

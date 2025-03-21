@@ -1,5 +1,5 @@
 import { Identity, importPubKey } from "./lib/auth.js";
-import { PeerEvent, SignalingEvent } from "./lib/constants.js";
+import { PeerEvent, PeerState, SignalingEvent } from "./lib/constants.js";
 import {
   handleCreateOffer,
   handleDisplayStatusChange,
@@ -10,7 +10,7 @@ import type {
   ReceiveTransferMessage,
   SDPEventMessage,
 } from "./lib/types.js";
-import { addFileDiv } from "./lib/utils.js";
+import { addFileDiv, getFileID } from "./lib/utils.js";
 import { peerEmitter, WebRTCPeer } from "./lib/webrtc.js";
 import { signallingEmitter, WSConnect } from "./lib/websocket.js";
 
@@ -19,6 +19,8 @@ lucide.createIcons();
 let localPeer: WebRTCPeer | null = null;
 let signallingChannel: WSConnect = new WSConnect();
 let identity: Identity | null = null;
+
+export async function transferFile(file: File) {}
 
 document.addEventListener("DOMContentLoaded", async () => {
   const peerType = document.getElementById("peer-type") as HTMLInputElement;
@@ -82,13 +84,16 @@ peerEmitter.addEventListener(PeerEvent.PEER_CONNECTED, async (event: Event) => {
   const sessionInput = document.getElementById("sessionId") as HTMLInputElement;
   htmx.ajax("GET", "/session/connected/" + sessionInput.value + "/", {
     target: "#main-container",
-    swap: "innerHTML",
+    swap: "outerHTML",
   });
 });
 
-peerEmitter.addEventListener(PeerEvent.INIT_TRANSFER, (event) => {
+peerEmitter.addEventListener(PeerEvent.INIT_TRANSFER, async (event) => {
+  if (localPeer!.getState() !== PeerState.CONNECTED) return;
   const { detail } = event as CustomEvent<InitTransferMessage>;
-  localPeer?.initTransfer(detail.file, detail.fileId);
+  const fileId = await getFileID();
+  addFileDiv(fileId, detail.file.name, false);
+  localPeer!.initTransfer(detail.file, fileId);
 });
 
 peerEmitter.addEventListener(PeerEvent.FILE_UPDATE, (event) => {
@@ -118,7 +123,7 @@ peerEmitter.addEventListener(PeerEvent.CONNECTION_STATUS_CHANGED, () => {
 peerEmitter.addEventListener(PeerEvent.TRANSFER_INITIATED, (event) => {
   const customEvent = event as CustomEvent<ReceiveTransferMessage>;
   const { fileName, fileId } = customEvent.detail;
-  addFileDiv(fileId, fileName);
+  addFileDiv(fileId, fileName, true);
 });
 
 signallingEmitter.addEventListener(
@@ -134,3 +139,8 @@ signallingEmitter.addEventListener(
     await identity!.deriveSharedSecret(pubKey);
   },
 );
+
+peerEmitter.addEventListener(PeerEvent.PEER_STATUS_CHANGED, (event) => {
+  const { detail } = event as CustomEvent<{ status: string }>;
+  handleDisplayStatusChange(detail.status);
+});

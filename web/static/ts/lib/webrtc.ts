@@ -95,6 +95,10 @@ export class WebRTCPeer {
     };
   }
 
+  getState(): PeerState {
+    return this.state;
+  }
+
   private setOffererDataChannel(): RTCDataChannel {
     const dataChannel = this.peerConnection.createDataChannel(
       "hypserspace-protocol",
@@ -102,12 +106,11 @@ export class WebRTCPeer {
 
     dataChannel.binaryType = "arraybuffer";
 
-    dataChannel.onclose = (event: Event | undefined) => {
-      console.log("Data Channel Closed", event);
+    dataChannel.onclose = (event: Event) => {
+      this.handleOnChannelDisconnect();
     };
 
-    dataChannel.onmessage = (event: MessageEvent | undefined) => {
-      if (!event) return;
+    dataChannel.onmessage = (event: MessageEvent) => {
       this.handleOnMessageEvent(event);
     };
 
@@ -119,12 +122,11 @@ export class WebRTCPeer {
       this.dataChannel = event.channel;
       this.dataChannel.binaryType = "arraybuffer";
 
-      this.dataChannel.onclose = (event: Event | undefined) => {
-        console.log("Data Channel Closed", event);
+      this.dataChannel.onclose = (_event: Event) => {
+        this.handleOnChannelDisconnect();
       };
 
-      this.dataChannel.onmessage = async (event: MessageEvent | undefined) => {
-        if (!event) return;
+      this.dataChannel.onmessage = async (event: MessageEvent) => {
         await this.handleOnMessageEvent(event);
       };
     };
@@ -171,31 +173,42 @@ export class WebRTCPeer {
       throw new Error("SDP ERROR: Cannot create new answer");
     }
   }
+  private resetPeer(): void {
+    this.transferSession = null;
+    this.state = PeerState.CONNECTED;
+  }
 
+  /**
+   * Initializes the transfer session and sends the metadata to the peer.
+   * @param file The file to be send
+   * @param fileId The file id which is used to identity which component in FE to update.
+   */
   public async initTransfer(file: File, fileId: string): Promise<void> {
     if (this.state !== PeerState.CONNECTED && this.transferSession !== null)
       return;
-    const metadata = await preProcessFile(file);
-    const transferSession: TransferSession = {
-      metadata,
-      file,
-      dataSent: 0,
-      chunksIndex: 0,
-      chunks: [],
-      fileId,
-    };
-    this.transferSession = transferSession;
-    this.state = PeerState.SENDING;
 
-    if (this.dataChannel === null) {
-      throw new Error("Data channel not set");
+    try {
+      const metadata = await preProcessFile(file);
+      const transferSession: TransferSession = {
+        metadata,
+        file,
+        dataSent: 0,
+        chunksIndex: 0,
+        chunks: [],
+        fileId,
+      };
+      this.transferSession = transferSession;
+      this.state = PeerState.SENDING;
+      this.send(
+        JSON.stringify({
+          type: PeerMessageType.INIT,
+          body: metadata,
+        } as PeerMessage),
+      );
+    } catch (error) {
+      console.error("Could not start transfer session:", error);
+      this.resetPeer();
     }
-
-    const peerMessage: PeerMessage = {
-      type: PeerMessageType.INIT,
-      body: metadata,
-    };
-    this.dataChannel.send(JSON.stringify(peerMessage));
   }
 
   /**
@@ -208,9 +221,8 @@ export class WebRTCPeer {
       [
         PeerState.CONNECTED,
         async () => {
-          const peerMessage = JSON.parse(
-            (event as MessageEvent<string>).data,
-          ) as PeerMessage;
+          const eventData = (event as MessageEvent<ArrayBuffer>).data;
+          const peerMessage = await this.decodeMessage(eventData);
           await this.handleInitMessage(peerMessage.body as InitPayload);
         },
       ],
@@ -225,12 +237,12 @@ export class WebRTCPeer {
       [
         PeerState.SENDING,
         async () => {
-          const eventPayload = event as MessageEvent<string>;
-          const msg = JSON.parse(eventPayload.data) as PeerMessage;
-          if (msg.type === PeerMessageType.OK) {
+          const eventData = (event as MessageEvent<ArrayBuffer>).data;
+          const peerMessage = await this.decodeMessage(eventData);
+          if (peerMessage.type === PeerMessageType.OK) {
             await this.handleOkMessage();
           } else {
-            console.error("Unknown message type", msg);
+            console.error("Unknown message type", peerMessage);
           }
         },
       ],
@@ -245,6 +257,38 @@ export class WebRTCPeer {
     await handler();
   }
 
+  private handleOnChannelDisconnect(): void {
+    peerEmitter.dispatchPeerEvent(PeerEvent.PEER_STATUS_CHANGED, {
+      status: "Disconnected",
+    });
+    this.resetPeer();
+  }
+
+  private async decodeMessage(data: ArrayBuffer): Promise<PeerMessage> {
+    const decryptedData = await this.identity.decrypt(data);
+    const decodedData = new TextDecoder().decode(decryptedData);
+    return JSON.parse(decodedData) as PeerMessage;
+  }
+
+  private async send(data: string): Promise<void>;
+  private async send(data: ArrayBuffer): Promise<void>;
+  private async send(data: string | ArrayBuffer): Promise<void> {
+    if (this.dataChannel === null) {
+      throw new Error("Data channel not set");
+    }
+
+    let encryptedData: ArrayBuffer;
+    if (typeof data === "string") {
+      let encoder = new TextEncoder();
+      let encodedData = encoder.encode(data);
+      encryptedData = await this.identity.encrypt(encodedData.buffer);
+    } else {
+      encryptedData = await this.identity.encrypt(data);
+    }
+
+    this.dataChannel.send(encryptedData);
+  }
+
   private completeTransfer(): void {
     const eof = new ArrayBuffer(0);
     this.dataChannel!.send(eof);
@@ -252,14 +296,9 @@ export class WebRTCPeer {
     this.transferSession = null;
   }
 
-  private async sendChunk(chunk: ArrayBuffer): Promise<void> {
-    let encryptedChunk = await this.identity.encrypt(chunk);
-    this.dataChannel!.send(encryptedChunk);
-  }
-
-  private sendOk(): void {
-    const okMsg: PeerMessage = { type: PeerMessageType.OK };
-    this.dataChannel!.send(JSON.stringify(okMsg));
+  private async sendOk(): Promise<void> {
+    let okMsg: PeerMessage = { type: PeerMessageType.OK };
+    await this.send(JSON.stringify(okMsg));
   }
 
   /**
@@ -268,7 +307,7 @@ export class WebRTCPeer {
    * @param payload The transfer metadata payload
    */
   private async handleInitMessage(payload: InitPayload): Promise<void> {
-    const fileId = await getFileID(payload.hash); // TODO: Generate a unique file ID using other means
+    const fileId = await getFileID();
     this.transferSession = {
       metadata: payload,
       chunksIndex: 0,
@@ -276,9 +315,7 @@ export class WebRTCPeer {
       fileId,
     };
     this.state = PeerState.RECEIVING;
-    this.dataChannel!.send(
-      JSON.stringify({ type: PeerMessageType.OK } as PeerMessage),
-    );
+    await this.sendOk();
 
     peerEmitter.dispatchPeerEvent<ReceiveTransferMessage>(
       PeerEvent.TRANSFER_INITIATED,
@@ -300,16 +337,20 @@ export class WebRTCPeer {
       return;
     }
     const decryptedPayload = await this.identity.decrypt(payload);
+    const { chunksIndex } = this.transferSession!;
     peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {
       fileId: this.transferSession!.fileId,
-      currentData: this.transferSession!.chunksIndex * CHUNK_SIZE,
+      currentData: Math.min(
+        chunksIndex * CHUNK_SIZE || CHUNK_SIZE,
+        this.transferSession!.metadata.fileSize,
+      ),
       totalData: this.transferSession!.metadata.fileSize,
     });
 
     const blob = new Blob([decryptedPayload]);
     this.transferSession!.chunks!.push(blob);
     this.transferSession!.chunksIndex++;
-    this.sendOk();
+    await this.sendOk();
   }
 
   /**
@@ -325,7 +366,7 @@ export class WebRTCPeer {
     const nextChunkEnd = Math.min(dataSent! + CHUNK_SIZE, metadata.fileSize);
     const chunk = file!.slice(dataSent, nextChunkEnd, metadata.fileType);
     const payloadData = await chunk.arrayBuffer();
-    await this.sendChunk(payloadData);
+    await this.send(payloadData);
     this.transferSession!.dataSent = nextChunkEnd;
     this.transferSession!.chunksIndex++;
     peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {

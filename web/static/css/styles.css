@@ -35,11 +35,11 @@ body {
 }
 
 .action-selector > button {
-    @apply text-center w-full text-violet-400 font-bold rounded-2xl p-2;
+    @apply text-center w-full text-emerald-400 font-bold rounded-2xl p-2;
 }
 
 .action-selector > button:hover {
-    @apply bg-neutral-700 cursor-pointer trans text-violet-400;
+    @apply bg-neutral-700 cursor-pointer trans text-emerald-400;
 }
 
 .action-selector > span {
@@ -59,18 +59,22 @@ body {
 /* Drag & Drop container */
 
 .drag-drop-container {
-    @apply h-80 w-full border-2 border-dashed border-neutral-700 rounded-2xl bg-neutral-950 flex items-center justify-center;
+    @apply h-96 w-full border-2 border-dashed border-neutral-700 rounded-2xl bg-neutral-950 flex items-center justify-center;
     @apply text-neutral-700 trans flex-col gap-2;
 }
 
 .drag-drop-container:hover,
 .drag-drop-container.drag-over {
-    @apply border-violet-600 text-violet-600;
+    @apply border-emerald-600 text-emerald-600;
 }
 
 /* END */
 
 /* Transfer File */
+
+div.file-container {
+    @apply w-full flex flex-col gap-4 h-full overflow-y-auto;
+}
 
 .transfer-file {
     @apply w-full flex gap-2 p-4 rounded-xl bg-neutral-800 justify-between items-center;
@@ -95,7 +99,7 @@ body {
     @apply w-full bg-gray-200 rounded-full dark:bg-gray-700;
 }
 .transfer-file > div.metadata > div.progress-top > div.progress {
-    @apply bg-violet-600 text-xs font-medium text-violet-100 text-center p-0.5 leading-none rounded-full;
+    @apply bg-emerald-600 text-xs font-medium text-emerald-100 text-center p-0.5 leading-none rounded-full;
 }
 
 /* END */
@@ -121,11 +125,11 @@ body {
 }
 
 .app-button {
-    @apply bg-violet-600 text-white p-2 rounded-xl trans w-full;
+    @apply bg-emerald-600 text-white p-2 rounded-xl trans w-full;
 }
 
 .app-button:hover {
-    @apply bg-gradient-to-r from-violet-600 to-fuchsia-600 -translate-y-1 shadow-lg shadow-black;
+    @apply bg-gradient-to-r from-emerald-600 to-green-500 -translate-y-1 shadow-lg shadow-black;
 }
 
 .trans {

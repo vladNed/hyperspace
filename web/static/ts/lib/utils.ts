@@ -18,16 +18,16 @@ export async function hashFile(file: File): Promise<string> {
   return btoa(String.fromCharCode(...hashArray));
 }
 
-export async function getFileID(fileHash: string): Promise<string> {
+export async function getFileID(): Promise<string> {
+  const uuid = crypto.getRandomValues(new Uint8Array(12)).buffer;
   const timestamp = Date.now().toString();
   const timestampBuffer = new TextEncoder().encode(timestamp);
-  const fileNameEncoded = new TextEncoder().encode(fileHash);
   const combinedBuffer = new Uint8Array(
-    fileNameEncoded.byteLength + timestampBuffer.byteLength,
+    uuid.byteLength + timestampBuffer.byteLength,
   );
 
-  combinedBuffer.set(new Uint8Array(fileNameEncoded), 0);
-  combinedBuffer.set(timestampBuffer, fileNameEncoded.byteLength);
+  combinedBuffer.set(new Uint8Array(uuid), 0);
+  combinedBuffer.set(timestampBuffer, uuid.byteLength);
 
   const hashBuffer = await crypto.subtle.digest("SHA-256", combinedBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -57,7 +57,11 @@ export async function preProcessFile(file: File): Promise<InitPayload> {
   return metadata;
 }
 
-export function addFileDiv(fileId: string, fileName: string): void {
+export function addFileDiv(
+  fileId: string,
+  fileName: string,
+  isDownload: boolean,
+): void {
   const fileContainer = document.getElementById("file-container");
   if (fileContainer === null) {
     throw new Error("File container not found");
@@ -82,7 +86,11 @@ export function addFileDiv(fileId: string, fileName: string): void {
 
   const iconDiv = document.createElement("div");
   iconDiv.classList.add("transfer-icon");
-  iconDiv.innerHTML = '<i data-lucide="cloud-upload" class="size-6"></i>';
+  if (isDownload) {
+    iconDiv.innerHTML = '<i data-lucide="download" class="size-6"></i>';
+  } else {
+    iconDiv.innerHTML = '<i data-lucide="upload" class="size-6"></i>';
+  }
 
   fileDiv.appendChild(metadataDiv);
   fileDiv.appendChild(iconDiv);

@@ -65,7 +65,6 @@ export interface SDPEventMessage {
 
 export interface InitTransferMessage {
   file: File;
-  fileId: string;
 }
 
 export interface ReceiveTransferMessage {

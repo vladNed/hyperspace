@@ -1,28 +1,32 @@
-<div class="flex flex-col gap-5 w-full items-center m-auto">
-    <div class="flex justify-center gap-4 text-3xl font-bold">
-        <span>[*</span>
-        <div>HyperSpace</div>
-        <span>*]</span>
-    </div>
-    <div class="delimiter"></div>
-    <div class="w-full">
-        <div class="flex gap-4">
-            <div class="text-neutral-500">Session ID:</div>
-            <div>{{ .sessionId }}</div>
+<div class="h-screen overflow-hidden py-10">
+    <div
+        class="max-w-[40rem] m-auto h-full overflow-hidden flex flex-col items-center px-6 gap-4"
+    >
+        <div class="flex justify-center gap-4 text-3xl font-bold">
+            <span>[*</span>
+            <div>HyperSpace</div>
+            <span>*]</span>
         </div>
-        <div class="flex gap-4">
-            <div class="text-neutral-500">Status:</div>
-            <div id="status">Connected</div>
+        <div class="delimiter"></div>
+        <div class="w-full">
+            <div class="flex gap-4">
+                <div class="text-neutral-500">Session ID:</div>
+                <div>{{ .sessionId }}</div>
+            </div>
+            <div class="flex gap-4">
+                <div class="text-neutral-500">Status:</div>
+                <div id="status">Connected</div>
+            </div>
         </div>
-    </div>
-    <div class="drag-drop-container" id="drag-drop-zone">
-        <div>Drop files to transfer</div>
-        <div>
-            <i data-lucide="package"></i>
+        <div class="drag-drop-container" id="drag-drop-zone">
+            <div>Drop files to transfer</div>
+            <div>
+                <i data-lucide="package"></i>
+            </div>
         </div>
+        <div class="delimiter"></div>
+        <div id="file-container" class="file-container"></div>
     </div>
-    <div class="delimiter"></div>
-    <div id="file-container" class="w-full flex flex-col gap-4"></div>
 </div>
 
 <script src="/static/js/sessionModule.js" type="module"></script>
