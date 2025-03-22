@@ -14,7 +14,7 @@ import type {
   FileUpdateEvent,
   ReceiveTransferMessage,
 } from "./types.js";
-import { getFileID, preProcessFile } from "./utils.js";
+import { addDownloadLink, getFileID, preProcessFile } from "./utils.js";
 
 export class PeerEmitter extends EventTarget {
   dispatchPeerEvent<T>(name: PeerEvent, detail: T): void {
@@ -386,19 +386,12 @@ export class WebRTCPeer {
       throw new Error("File size mismatch");
     }
 
-    this.downloadFile(blob, metadata);
+    this.downloadFile(blob, metadata, this.transferSession!.fileId);
     this.state = PeerState.CONNECTED;
     this.transferSession = null;
   }
 
-  private downloadFile(file: Blob, metadata: InitPayload) {
-    const url = URL.createObjectURL(file);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = metadata.fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  private downloadFile(file: Blob, metadata: InitPayload, fileId: string) {
+    addDownloadLink(fileId, file, metadata.fileName);
   }
 }

@@ -87,13 +87,41 @@ export function addFileDiv(
   const iconDiv = document.createElement("div");
   iconDiv.classList.add("transfer-icon");
   if (isDownload) {
-    iconDiv.innerHTML = '<i data-lucide="download" class="size-6"></i>';
+    iconDiv.innerHTML = '<i data-lucide="cloud-download" class="size-6"></i>';
   } else {
-    iconDiv.innerHTML = '<i data-lucide="upload" class="size-6"></i>';
+    iconDiv.innerHTML = '<i data-lucide="cloud-upload" class="size-6"></i>';
   }
 
   fileDiv.appendChild(metadataDiv);
   fileDiv.appendChild(iconDiv);
   fileContainer.appendChild(fileDiv);
+  lucide.createIcons();
+}
+
+/**
+ * Replaces the upload icon with a download icon and adds a download link to the file div
+ */
+export function addDownloadLink(fileId: string, file: Blob, fileName: string) {
+  const url = URL.createObjectURL(file);
+  const fileDiv = document.getElementById(fileId);
+  if (fileDiv === null) {
+    throw new Error("File div not found");
+  }
+
+  const iconDiv = fileDiv.querySelector(".transfer-icon");
+  if (iconDiv === null) {
+    throw new Error("Icon div not found");
+  }
+
+  const newContainer = document.createElement("div");
+  const link = document.createElement("a");
+  link.classList.add("transfer-icon");
+  link.title = "Download file";
+  link.innerHTML = '<i data-lucide="download" class="size-6"></i>';
+  link.href = url;
+  link.download = fileName;
+  newContainer.appendChild(link);
+
+  fileDiv.replaceChild(newContainer, iconDiv);
   lucide.createIcons();
 }
