@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/vladNed/hyperspace/internal/cache"
 	"github.com/vladNed/hyperspace/internal/utils"
 )
 
@@ -12,12 +13,6 @@ func pingHandler(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "pong",
 	})
-}
-
-func startSessionHandler(c *gin.Context) {
-	newSessionId := utils.GetSessionId()
-	c.Header("Content-Type", "text/html")
-	c.HTML(http.StatusCreated, "session-id.html", gin.H{"sessionId": newSessionId})
 }
 
 func indexHandler(c *gin.Context) {
@@ -57,7 +52,25 @@ func connectHandler(c *gin.Context) {
 func sessionCommonHandler(c *gin.Context) {
 	sessionParam := c.Param("sessionId")
 	c.Header("Content-Type", "text/html")
+	cacheClient := cache.NewRedis()
+	if _, err := cacheClient.Get(sessionParam); err != nil {
+		c.HTML(http.StatusNotFound, "not-found.html", gin.H{})
+		return
+	}
 	c.HTML(http.StatusOK, "session-common.html", gin.H{
+		"sessionId": sessionParam,
+	})
+}
+
+func connectingHandler(c *gin.Context) {
+	sessionParam := c.Param("sessionId")
+	c.Header("Content-Type", "text/html")
+	cacheClient := cache.NewRedis()
+	if _, err := cacheClient.Get(sessionParam); err != nil {
+		c.HTML(http.StatusNotFound, "not-found-page.html", gin.H{})
+		return
+	}
+	c.HTML(http.StatusOK, "session-connecting.html", gin.H{
 		"sessionId": sessionParam,
 	})
 }

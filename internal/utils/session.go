@@ -1,9 +1,13 @@
 package utils
 
 import (
-	"github.com/google/uuid"
+	"crypto/rand"
+	"encoding/base64"
 )
 
 func GetSessionId() string {
-	return uuid.New().String()
+	bytes := make([]byte, 16)
+	rand.Read(bytes)
+
+	return base64.URLEncoding.EncodeToString(bytes)[:8]
 }

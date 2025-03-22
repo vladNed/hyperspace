@@ -1,6 +1,9 @@
-import { PeerEvent } from "./lib/constants.js";
+import { PeerEvent, SignalingEvent } from "./lib/constants.js";
 import { InitTransferMessage } from "./lib/types.js";
 import { peerEmitter } from "./lib/webrtc.js";
+import { signallingEmitter } from "./lib/websocket.js";
+
+signallingEmitter.dispatchPeerEvent(SignalingEvent.CLOSE, {});
 
 lucide.createIcons();
 

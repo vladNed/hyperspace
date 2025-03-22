@@ -37,6 +37,8 @@ export enum PeerEvent {
 }
 
 export enum SignalingEvent {
+  CONNECTED = "connected",
+  CLOSE = "close",
   OFFER_FETCHED = "offerFetched",
 }
 

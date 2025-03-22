@@ -19,14 +19,14 @@ func NewServer() *Server {
 func (s *Server) RegisterRoutes() {
 	v1 := s.engine.Group("/api/v1")
 	v1.GET("/ping/", pingHandler)
-	v1.POST("/session/", startSessionHandler) // TODO: Deprecate this
 
 	wsV1 := s.engine.Group("/ws/v1")
 	wsV1.GET("/session/", wsHandler)
 
 	s.engine.GET("/", indexHandler)
 	s.engine.GET("/session/:action", connectHandler)
-	s.engine.GET("/session/connected/:sessionId/", sessionCommonHandler)
+	s.engine.GET("/session/connect/:sessionId/", sessionCommonHandler)
+	s.engine.GET("/connect/:sessionId/", connectingHandler)
 }
 
 func (s *Server) Run() {

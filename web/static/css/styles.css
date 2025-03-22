@@ -18,7 +18,7 @@
 
 html,
 body {
-    @apply bg-white text-black dark:bg-black dark:text-neutral-100 transition-all duration-300 ease-in-out;
+    @apply bg-white text-black dark:bg-black dark:text-neutral-100 transition-all duration-200 ease-in-out;
     font-family: inherit;
 }
 

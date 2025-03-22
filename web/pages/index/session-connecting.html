@@ -1,0 +1,26 @@
+{{ template "top" .}}
+<input
+    id="peer-type"
+    type="text"
+    disabled="true"
+    value="answer"
+    hidden="true"
+/>
+<input id="sessionId" type="text" hidden="true" value="{{ .sessionId }}" />
+<div class="flex flex-col gap-5 w-full items-center m-auto" id="not-found">
+    <div class="flex justify-center gap-4 text-4xl font-extrabold">
+        <span>[*</span>
+        <div id="status">Joining session</div>
+        <span>*]</span>
+    </div>
+    <p>Connecting to peer transfer space.</p>
+    <div class="w-full flex justify-center">
+        <i data-lucide="loader" class="animate-spin size-10"></i>
+    </div>
+</div>
+
+<button class="app-button" id="session-start-btn" hidden="true"></button>
+
+<script src="/static/js/session.js" type="module"></script>
+<script src="/static/js/connect.js" type="module"></script>
+{{ template "bottom" .}}

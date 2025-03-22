@@ -29,7 +29,7 @@ export class WSConnect {
     this.client = new WebSocket("ws://localhost:8080/ws/v1/session/");
 
     this.client.onopen = () => {
-      console.log("Connected to signaling server");
+      signallingEmitter.dispatchPeerEvent(SignalingEvent.CONNECTED, {});
     };
 
     this.client.onmessage = (event: MessageEvent<string>) => {

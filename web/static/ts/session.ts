@@ -20,8 +20,6 @@ let localPeer: WebRTCPeer | null = null;
 let signallingChannel: WSConnect = new WSConnect();
 let identity: Identity | null = null;
 
-export async function transferFile(file: File) {}
-
 document.addEventListener("DOMContentLoaded", async () => {
   const peerType = document.getElementById("peer-type") as HTMLInputElement;
   if (peerType === null) {
@@ -80,9 +78,8 @@ peerEmitter.addEventListener(PeerEvent.ANSWER_CREATED, async (event: Event) => {
 
 peerEmitter.addEventListener(PeerEvent.PEER_CONNECTED, async (event: Event) => {
   handleDisplayStatusChange("Connected to peer");
-  signallingChannel.close();
   const sessionInput = document.getElementById("sessionId") as HTMLInputElement;
-  htmx.ajax("GET", "/session/connected/" + sessionInput.value + "/", {
+  htmx.ajax("GET", "/session/connect/" + sessionInput.value + "/", {
     target: "#main-container",
     swap: "outerHTML",
   });
@@ -139,6 +136,10 @@ signallingEmitter.addEventListener(
     await identity!.deriveSharedSecret(pubKey);
   },
 );
+
+signallingEmitter.addEventListener(SignalingEvent.CLOSE, () => {
+  signallingChannel.close();
+});
 
 peerEmitter.addEventListener(PeerEvent.PEER_STATUS_CHANGED, (event) => {
   const { detail } = event as CustomEvent<{ status: string }>;
