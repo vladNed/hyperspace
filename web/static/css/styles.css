@@ -18,7 +18,7 @@
 
 html,
 body {
-    @apply bg-black text-neutral-100;
+    @apply bg-white text-black dark:bg-black dark:text-neutral-100 transition-all duration-300 ease-in-out;
     font-family: inherit;
 }
 
@@ -31,19 +31,19 @@ body {
 /* Action Selector */
 
 .action-selector {
-    @apply flex justify-between bg-neutral-800 rounded-3xl p-2 gap-2 w-full;
+    @apply flex justify-between bg-neutral-100 dark:bg-neutral-800 rounded-3xl p-2 gap-2 w-full;
 }
 
 .action-selector > button {
-    @apply text-center w-full text-emerald-400 font-bold rounded-2xl p-2;
+    @apply text-center w-full text-emerald-600 dark:text-emerald-400 font-bold rounded-2xl p-2;
 }
 
 .action-selector > button:hover {
-    @apply bg-neutral-700 cursor-pointer trans text-emerald-400;
+    @apply bg-neutral-200 dark:bg-neutral-700 cursor-pointer trans text-emerald-700 dark:text-emerald-400;
 }
 
 .action-selector > span {
-    @apply border-l-2 border-neutral-700;
+    @apply border-l-2 border-neutral-300 dark:border-neutral-700;
 }
 
 /* END */
@@ -51,7 +51,7 @@ body {
 /* Delimiter */
 
 .delimiter {
-    @apply w-full border-b border-neutral-700;
+    @apply w-full border-b border-neutral-300 dark:border-neutral-700;
 }
 
 /* END */
@@ -59,8 +59,9 @@ body {
 /* Drag & Drop container */
 
 .drag-drop-container {
-    @apply h-96 w-full border-2 border-dashed border-neutral-700 rounded-2xl bg-neutral-950 flex items-center justify-center;
-    @apply text-neutral-700 trans flex-col gap-2;
+    @apply h-96 w-full border-2 border-dashed border-neutral-400 rounded-2xl bg-neutral-100 flex items-center justify-center;
+    @apply text-neutral-400 dark:text-neutral-700 trans flex-col gap-2;
+    @apply dark:border-neutral-700 dark:bg-neutral-950;
 }
 
 .drag-drop-container:hover,
@@ -77,14 +78,7 @@ div.file-container {
 }
 
 .transfer-file {
-    @apply w-full  flex gap-2 p-4 rounded-xl bg-neutral-800 justify-between items-center;
-}
-
-.transfer-file > .check {
-    @apply p-1 border rounded-full text-green-500 border-green-500;
-}
-.transfer-file > .uploading {
-    @apply text-yellow-500;
+    @apply w-full  flex gap-2 p-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 justify-between items-center;
 }
 
 .transfer-file > .metadata {
@@ -96,8 +90,8 @@ div.file-container {
 }
 
 .transfer-file a.transfer-icon {
-    @apply flex items-center justify-center p-2  rounded-full border border-emerald-400 text-emerald-400;
-    @apply hover:bg-emerald-500 hover:text-black trans hover:-translate-y-1 hover:shadow-lg hover:shadow-black;
+    @apply flex items-center justify-center p-2  rounded-full border border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400;
+    @apply hover:bg-emerald-500 hover:text-black trans hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-black;
     @apply active:bg-emerald-600 active:text-black active:-translate-y-0.5 active:shadow-lg active:shadow-black;
 }
 
@@ -111,19 +105,19 @@ div.file-container {
 /* END */
 
 .app-input-container {
-    @apply border-2 border-neutral-600 rounded-2xl py-3 px-5 text-neutral-100 place-items-center flex;
+    @apply border-2 border-neutral-200 dark:border-neutral-600 rounded-2xl py-3 px-5 text-black dark:text-neutral-100 place-items-center flex;
 }
 
 .app-input-container > input {
-    @apply bg-transparent text-neutral-100 !border-none !ring-0 !outline-none  w-full z-20;
+    @apply bg-transparent !border-none !ring-0 !outline-none  w-full z-20;
 }
 
 .app-input-container > label {
-    @apply absolute text-neutral-100 trans;
+    @apply absolute dark:text-neutral-100 text-neutral-500 trans;
 }
 
 .app-input-container > label.activated {
-    @apply text-xs -translate-y-7 bg-black p-2;
+    @apply text-xs -translate-y-7 bg-white dark:bg-black p-2;
 }
 
 .app-input-container > div.ico {
@@ -135,7 +129,7 @@ div.file-container {
 }
 
 .app-button:hover {
-    @apply bg-gradient-to-r from-emerald-600 to-green-500 -translate-y-1 shadow-lg shadow-black;
+    @apply bg-gradient-to-r from-emerald-600 to-green-500 -translate-y-1 shadow-lg dark:shadow-black;
 }
 
 .trans {
