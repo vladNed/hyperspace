@@ -19,28 +19,36 @@ func indexHandler(c *gin.Context) {
 	c.Header("Content-Type", "text/html")
 	c.Header("X-Cache", "HIT")
 	c.HTML(http.StatusOK, "index.html", gin.H{
-		"title":       "Hyperspace",
-		"description": "Hyperspace is p2p secure file sharing application",
+		"title":       "SelenialSpace",
+		"description": "SelenialSpace is p2p secure file sharing application",
 		"sessionId":   utils.GetSessionId(),
 	})
 }
 
 func connectHandler(c *gin.Context) {
 	actionParam := c.Param("action")
+	action, err := GetActionParameter(actionParam)
+	if err != nil {
+		c.HTML(http.StatusNotFound, "not-found-page.html", gin.H{})
+		return
+	}
+
 	c.Header("Content-Type", "text/html")
-	switch actionParam {
-	case "start":
+	switch action {
+	case StartAction:
 		c.HTML(http.StatusOK, "session-start.html", gin.H{
-			"title":       "Hyperspace",
-			"description": "Hyperspace is p2p secure file sharing application",
+			"title":       "Selenial",
+			"description": "Selenial is p2p secure file sharing application",
 			"sessionId":   utils.GetSessionId(),
+			"wsURL":       "ws://" + c.Request.Host + "/ws/v1/session/",
 		})
 		break
-	case "join":
+	case JoinAction:
 		c.HTML(http.StatusOK, "session-join.html", gin.H{
-			"title":       "Hyperspace",
-			"description": "Hyperspace is p2p secure file sharing application",
+			"title":       "Selenial",
+			"description": "Selenial is p2p secure file sharing application",
 			"sessionId":   utils.GetSessionId(),
+			"wsURL":       "ws://" + c.Request.Host + "/ws/v1/session/",
 		})
 		break
 	default:

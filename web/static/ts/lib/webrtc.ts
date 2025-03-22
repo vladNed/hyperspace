@@ -41,7 +41,9 @@ export class WebRTCPeer {
       this.setAnswererDataChannel();
     }
 
-    this.peerConnection.onicecandidate = (event: Event | undefined) => {
+    this.peerConnection.onicecandidate = (
+      event: RTCPeerConnectionIceEventInit,
+    ) => {
       if (!event) return;
       if (this.peerConnection.iceGatheringState === "complete") {
         switch (this.state) {

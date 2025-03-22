@@ -35,6 +35,9 @@
     <script src="/static/js/index.js" type="module"></script>
     <script>
         lucide.createIcons();
+        window.SERVER_CONFIG = {
+            WS_URL: "{{ .wsURL }}",
+        };
     </script>
 </html>
 {{ end }}

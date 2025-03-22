@@ -11,3 +11,22 @@ services:
       - ./certs/redis.crt:/etc/redis/tls/redis.crt
       - ./certs/redis.key:/etc/redis/tls/redis.key
     restart: always
+    networks:
+      - selenial
+
+  selenial-app:
+    build: .
+    container_name: selenial_app
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    networks:
+      - selenial
+    depends_on:
+      - redis
+    restart: always
+
+networks:
+  selenial:
+    driver: bridge

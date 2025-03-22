@@ -1,6 +1,9 @@
 package server
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+)
 
 type SessionMessageType string
 
@@ -11,6 +14,24 @@ const (
 	Error    SessionMessageType = "error"
 	Ok       SessionMessageType = "ok"
 )
+
+type ActionParameter string
+
+const (
+	StartAction ActionParameter = "start"
+	JoinAction  ActionParameter = "join"
+)
+
+func GetActionParameter(value string) (ActionParameter, error) {
+	switch value {
+	case string(StartAction):
+		return StartAction, nil
+	case string(JoinAction):
+		return JoinAction, nil
+	default:
+		return "", errors.New("invalid action parameter")
+	}
+}
 
 type SessionMessage struct {
 	Payload json.RawMessage    `json:"payload"`

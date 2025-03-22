@@ -24,9 +24,12 @@ func GetInstance() *Settings {
 }
 
 func (s *Settings) loadEnvVars() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalln("cannot load env variables")
+	env := os.Getenv("ENV")
+	if env != "prod" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatalln("cannot load env variables")
+		}
 	}
 
 	redisAddr := os.Getenv("REDIS_ADDR")
