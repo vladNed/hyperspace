@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/gorilla/websocket"
+
+	"github.com/vladNed/hyperspace/internal/cache"
 )
 
 var hub *Hub
@@ -12,6 +14,7 @@ type Hub struct {
 	connections map[string]*websocket.Conn
 	broadcast   chan BroadcastPayload
 	ctx         context.Context
+	cache       *cache.Redis
 }
 
 func NewHub() *Hub {
@@ -20,6 +23,7 @@ func NewHub() *Hub {
 		connections: make(map[string]*websocket.Conn),
 		broadcast:   make(chan BroadcastPayload),
 		ctx:         ctx,
+		cache:       cache.NewRedis(),
 	}
 }
 
@@ -39,6 +43,7 @@ func (h *Hub) RemoveSession(conn *websocket.Conn) {
 	for key, value := range h.connections {
 		if value == conn {
 			delete(h.connections, key)
+			h.cache.Del(key)
 			return
 		}
 	}

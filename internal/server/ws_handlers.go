@@ -57,8 +57,7 @@ func wsHandler(c *gin.Context) {
 	}
 
 	hub := hub.GetInstance()
-	hub.RemoveSession(conn)
-
+	go hub.RemoveSession(conn)
 }
 
 func parseMessage(rawMsg SessionMessage, conn *websocket.Conn) (any, error) {
