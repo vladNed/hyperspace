@@ -102,6 +102,7 @@ peerEmitter.addEventListener(PeerEvent.FILE_UPDATE, (event) => {
   ) as HTMLDivElement;
 
   const progress = Math.round((currentData / totalData) * 100);
+  console.log("DATA :: ", currentData, totalData);
 
   progressBar.innerText = `${progress}%`;
   progressBar.style.width = `${progress}%`;

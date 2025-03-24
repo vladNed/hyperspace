@@ -9,7 +9,8 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "build:styles": "tailwindcss build -i web/static/css/styles.css -o web/static/css/tailwind.css --watch"
+    "build:styles": "tailwindcss build -i web/static/css/styles.css -o web/static/css/tailwind.css",
+    "watch:styles": "tailwindcss build -i web/static/css/styles.css -o web/static/css/tailwind.css --watch"
   },
   "keywords": [
     "p2p",

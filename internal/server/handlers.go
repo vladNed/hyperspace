@@ -38,10 +38,18 @@ func connectHandler(c *gin.Context) {
 	c.Header("Content-Type", "text/html")
 	switch action {
 	case StartAction:
+		cacheInstance := cache.NewRedis()
+		var sessionId string
+		for range 5 {
+			sessionId = utils.GetSessionId()
+			if _, err := cacheInstance.Get(sessionId); err != nil {
+				break
+			}
+		}
 		c.HTML(http.StatusOK, "session-start.html", gin.H{
 			"title":       "Senders",
 			"description": "Senders is p2p secure file sharing application",
-			"sessionId":   utils.GetSessionId(),
+			"sessionId":   sessionId,
 			"wsURL":       settings.WSOrigin + "/ws/v1/session/",
 		})
 		break
@@ -49,7 +57,6 @@ func connectHandler(c *gin.Context) {
 		c.HTML(http.StatusOK, "session-join.html", gin.H{
 			"title":       "Senders",
 			"description": "Senders is p2p secure file sharing application",
-			"sessionId":   utils.GetSessionId(),
 			"wsURL":       settings.WSOrigin + "/ws/v1/session/",
 		})
 		break

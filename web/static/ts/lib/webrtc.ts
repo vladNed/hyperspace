@@ -390,7 +390,7 @@ export class WebRTCPeer {
   }
 
   private async handleEOF(): Promise<void> {
-    const { chunks, metadata } = this.transferSession!;
+    const { chunks, metadata, fileId } = this.transferSession!;
     const blob = new Blob(chunks!, { type: metadata.fileType });
     if (blob.size !== metadata.fileSize) {
       alert("File mismatch !! Transfer session might be corrupted.");
@@ -401,8 +401,13 @@ export class WebRTCPeer {
       alert("File mismatch !! Transfer session might be corrupted.");
       throw new Error("File hash mismatch");
     }
-    handleDisplayFileStatus(this.transferSession!.fileId, FileStatus.DONE);
-    this.downloadFile(blob, metadata, this.transferSession!.fileId);
+    handleDisplayFileStatus(fileId, FileStatus.DONE);
+    this.downloadFile(blob, metadata, fileId);
+    peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {
+      fileId,
+      currentData: metadata.fileSize,
+      totalData: metadata.fileSize,
+    });
     this.state = PeerState.CONNECTED;
     this.transferSession = null;
   }
