@@ -3,14 +3,18 @@ package settings
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 type Settings struct {
-	RedisAddr string
-	RedisPort string
-	RedisTTL  int
+	Env           string
+	AllowedOrigin string
+	RedisAddr     string
+	RedisPort     string
+	RedisTTL      int
+	WSOrigin      string
 }
 
 var instance *Settings
@@ -31,7 +35,7 @@ func (s *Settings) loadEnvVars() {
 			log.Fatalln("cannot load env variables")
 		}
 	}
-
+	s.Env = env
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr == "" {
 		log.Fatalln("REDIS_ADDR is not set")
@@ -43,6 +47,13 @@ func (s *Settings) loadEnvVars() {
 		log.Fatalln("REDIS_PORT is not set")
 	}
 	s.RedisPort = redisPort
-
+	s.AllowedOrigin = os.Getenv("ALLOWED_ORIGIN")
 	s.RedisTTL = 300
+
+	if env == "prod" {
+		s.WSOrigin = strings.ReplaceAll(s.AllowedOrigin, "https", "wss")
+	} else {
+		s.WSOrigin = "ws://localhost:8080"
+	}
+
 }

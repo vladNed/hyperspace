@@ -1,11 +1,14 @@
 import { Identity } from "./auth.js";
 import {
   CHUNK_SIZE,
+  FileStatus,
   ICE_SERVERS,
   PeerEvent,
   PeerMessageType,
   PeerState,
+  SignalingEvent,
 } from "./constants.js";
+import { handleDisplayFileStatus } from "./handlers.js";
 import type {
   InitPayload,
   PeerMessage,
@@ -14,7 +17,13 @@ import type {
   FileUpdateEvent,
   ReceiveTransferMessage,
 } from "./types.js";
-import { addDownloadLink, getFileID, preProcessFile } from "./utils.js";
+import {
+  addDownloadLink,
+  getFileID,
+  hashFile,
+  preProcessFile,
+} from "./utils.js";
+import { signallingEmitter } from "./websocket.js";
 
 export class PeerEmitter extends EventTarget {
   dispatchPeerEvent<T>(name: PeerEvent, detail: T): void {
@@ -76,10 +85,6 @@ export class WebRTCPeer {
       event: Event | undefined,
     ) => {
       if (!event) return;
-      console.log(
-        "New on connection state change evnet:",
-        this.peerConnection.connectionState,
-      );
       switch (this.peerConnection.connectionState) {
         case "connected":
           this.state = PeerState.CONNECTED;
@@ -292,6 +297,7 @@ export class WebRTCPeer {
   }
 
   private completeTransfer(): void {
+    handleDisplayFileStatus(this.transferSession!.fileId, FileStatus.DONE);
     const eof = new ArrayBuffer(0);
     this.dataChannel!.send(eof);
     this.state = PeerState.CONNECTED;
@@ -340,6 +346,10 @@ export class WebRTCPeer {
     }
     const decryptedPayload = await this.identity.decrypt(payload);
     const { chunksIndex } = this.transferSession!;
+    handleDisplayFileStatus(
+      this.transferSession!.fileId,
+      FileStatus.TRANSFERRING,
+    );
     peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {
       fileId: this.transferSession!.fileId,
       currentData: Math.min(
@@ -365,6 +375,7 @@ export class WebRTCPeer {
       this.completeTransfer();
       return;
     }
+    handleDisplayFileStatus(fileId, FileStatus.TRANSFERRING);
     const nextChunkEnd = Math.min(dataSent! + CHUNK_SIZE, metadata.fileSize);
     const chunk = file!.slice(dataSent, nextChunkEnd, metadata.fileType);
     const payloadData = await chunk.arrayBuffer();
@@ -378,16 +389,19 @@ export class WebRTCPeer {
     });
   }
 
-  private handleEOF(): void {
+  private async handleEOF(): Promise<void> {
     const { chunks, metadata } = this.transferSession!;
     const blob = new Blob(chunks!, { type: metadata.fileType });
     if (blob.size !== metadata.fileSize) {
-      console.error(
-        `Chunks: ${chunks?.length}, Blob size: ${blob.size}, Meta total size: ${metadata.fileSize}`,
-      );
+      alert("File mismatch !! Transfer session might be corrupted.");
       throw new Error("File size mismatch");
     }
-
+    const hashBlob = await hashFile(blob);
+    if (hashBlob !== this.transferSession?.metadata.hash) {
+      alert("File mismatch !! Transfer session might be corrupted.");
+      throw new Error("File hash mismatch");
+    }
+    handleDisplayFileStatus(this.transferSession!.fileId, FileStatus.DONE);
     this.downloadFile(blob, metadata, this.transferSession!.fileId);
     this.state = PeerState.CONNECTED;
     this.transferSession = null;

@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/vladNed/hyperspace/internal/cache"
+	"github.com/vladNed/hyperspace/internal/settings"
 	"github.com/vladNed/hyperspace/internal/utils"
 )
 
@@ -19,14 +20,15 @@ func indexHandler(c *gin.Context) {
 	c.Header("Content-Type", "text/html")
 	c.Header("X-Cache", "HIT")
 	c.HTML(http.StatusOK, "index.html", gin.H{
-		"title":       "SelenialSpace",
-		"description": "SelenialSpace is p2p secure file sharing application",
+		"title":       "Senders",
+		"description": "Senders is p2p secure file sharing application",
 		"sessionId":   utils.GetSessionId(),
 	})
 }
 
 func connectHandler(c *gin.Context) {
 	actionParam := c.Param("action")
+	settings := settings.GetInstance()
 	action, err := GetActionParameter(actionParam)
 	if err != nil {
 		c.HTML(http.StatusNotFound, "not-found-page.html", gin.H{})
@@ -37,18 +39,18 @@ func connectHandler(c *gin.Context) {
 	switch action {
 	case StartAction:
 		c.HTML(http.StatusOK, "session-start.html", gin.H{
-			"title":       "Selenial",
-			"description": "Selenial is p2p secure file sharing application",
+			"title":       "Senders",
+			"description": "Senders is p2p secure file sharing application",
 			"sessionId":   utils.GetSessionId(),
-			"wsURL":       "ws://" + c.Request.Host + "/ws/v1/session/",
+			"wsURL":       settings.WSOrigin + "/ws/v1/session/",
 		})
 		break
 	case JoinAction:
 		c.HTML(http.StatusOK, "session-join.html", gin.H{
-			"title":       "Selenial",
-			"description": "Selenial is p2p secure file sharing application",
+			"title":       "Senders",
+			"description": "Senders is p2p secure file sharing application",
 			"sessionId":   utils.GetSessionId(),
-			"wsURL":       "ws://" + c.Request.Host + "/ws/v1/session/",
+			"wsURL":       settings.WSOrigin + "/ws/v1/session/",
 		})
 		break
 	default:

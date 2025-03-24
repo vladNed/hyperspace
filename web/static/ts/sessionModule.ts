@@ -1,11 +1,13 @@
-import { PeerEvent, SignalingEvent } from "./lib/constants.js";
+import { MAX_FILE_SIZE, PeerEvent, SignalingEvent } from "./lib/constants.js";
 import { InitTransferMessage } from "./lib/types.js";
 import { peerEmitter } from "./lib/webrtc.js";
 import { signallingEmitter } from "./lib/websocket.js";
 
-signallingEmitter.dispatchPeerEvent(SignalingEvent.CLOSE, {});
-
 lucide.createIcons();
+
+setTimeout(() => {
+  signallingEmitter.dispatchPeerEvent(SignalingEvent.CLOSE, {});
+}, 3000);
 
 const dropZone = document.getElementById("drag-drop-zone");
 if (dropZone === null) {
@@ -25,6 +27,10 @@ dropZone.addEventListener("drop", async (event) => {
   event.preventDefault();
   dropZone.classList.remove("drag-over");
   const file = event.dataTransfer!.files[0];
+  if (file.size > MAX_FILE_SIZE) {
+    alert("Cannot transfer files larger than 500MB");
+    return;
+  }
   peerEmitter.dispatchPeerEvent<InitTransferMessage>(PeerEvent.INIT_TRANSFER, {
     file,
   });

@@ -9,11 +9,40 @@ export function decodeSDP(sdp: string): RTCSessionDescriptionInit {
   return JSON.parse(atob(sdp));
 }
 
-export async function hashFile(file: File): Promise<string> {
-  const hashBuffer = await crypto.subtle.digest(
-    "SHA-256",
-    await file.arrayBuffer(),
-  );
+async function streamToBuffer(
+  stream: ReadableStream<Uint8Array>,
+): Promise<ArrayBuffer> {
+  const reader = stream.getReader();
+  const chunks = [];
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    chunks.push(value);
+  }
+
+  return new Blob(chunks).arrayBuffer();
+}
+
+export async function hashFile(file: Blob): Promise<string>;
+export async function hashFile(file: File): Promise<string>;
+export async function hashFile(file: File | Blob): Promise<string> {
+  let hashBuffer: ArrayBuffer;
+  if (file instanceof Blob) {
+    hashBuffer = await crypto.subtle.digest(
+      "SHA-256",
+      await file.arrayBuffer(),
+    );
+  } else {
+    hashBuffer = await crypto.subtle.digest(
+      "SHA-256",
+      await streamToBuffer((file as File).stream()),
+    );
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return btoa(String.fromCharCode(...hashArray));
+  }
+
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return btoa(String.fromCharCode(...hashArray));
 }
@@ -70,11 +99,28 @@ export function addFileDiv(
   fileDiv.id = fileId;
   fileDiv.classList.add("transfer-file");
 
+  // Metadata div holds file name, status, and progress bar
   const metadataDiv = document.createElement("div");
   metadataDiv.classList.add("metadata");
+
+  // Title and status div
+  const topDiv = document.createElement("div");
+  topDiv.classList.add("flex", "gap-4");
+
+  // Name element
   const titleDiv = document.createElement("p");
   titleDiv.textContent = fileName;
-  metadataDiv.appendChild(titleDiv);
+
+  // Status element
+  const titleStatus = document.createElement("p");
+  titleStatus.classList.add("text-neutral-500");
+  titleStatus.id = fileId + "-status";
+  titleStatus.textContent = "Processing";
+  topDiv.appendChild(titleDiv);
+  topDiv.appendChild(titleStatus);
+
+  metadataDiv.appendChild(topDiv);
+
   const progressDiv = document.createElement("div");
   progressDiv.classList.add("progress-top");
   const progressBar = document.createElement("div");
@@ -87,9 +133,11 @@ export function addFileDiv(
   const iconDiv = document.createElement("div");
   iconDiv.classList.add("transfer-icon");
   if (isDownload) {
-    iconDiv.innerHTML = '<i data-lucide="cloud-download" class="size-6"></i>';
+    iconDiv.innerHTML =
+      '<i data-lucide="cloud-download" class="size-6 animate-pulse"></i>';
   } else {
-    iconDiv.innerHTML = '<i data-lucide="cloud-upload" class="size-6"></i>';
+    iconDiv.innerHTML =
+      '<i data-lucide="cloud-upload" class="size-6 animate-pulse"></i>';
   }
 
   fileDiv.appendChild(metadataDiv);

@@ -27,9 +27,14 @@ export class WSConnect {
 
   constructor() {
     this.client = new WebSocket((window as any).SERVER_CONFIG?.WS_URL || "");
-
     this.client.onopen = () => {
       signallingEmitter.dispatchPeerEvent(SignalingEvent.CONNECTED, {});
+    };
+    this.client.onerror = (event: Event) => {
+      handleDisplayStatusChange("Server Down");
+      handleSessionResponseError(
+        "Cannot create a new senders session due to a server error",
+      );
     };
 
     this.client.onmessage = (event: MessageEvent<string>) => {
@@ -51,6 +56,7 @@ export class WSConnect {
             offerDataMsg.type == "error" &&
             (offerDataMsg.payload as Response).message
           ) {
+            handleDisplayStatusChange("Senders");
             handleSessionResponseError(
               (offerDataMsg.payload as Response).message,
             );
@@ -71,8 +77,15 @@ export class WSConnect {
           });
 
           break;
+        case SignalingState.ANSWER_SENT:
+          const answerResponse = JSON.parse(event.data) as SessionResponse<any>;
+          if (answerResponse.type == "error") {
+            handleSessionResponseError(answerResponse.payload.message);
+          }
+          break;
         default: {
-          handleDisplayStatusChange("Left in unkown state. Please refresh.");
+          handleDisplayStatusChange("Connection error");
+          handleSessionResponseError("Cannot connect. Please refresh page.");
           break;
         }
       }

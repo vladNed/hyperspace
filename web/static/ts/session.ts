@@ -20,7 +20,7 @@ let localPeer: WebRTCPeer | null = null;
 let signallingChannel: WSConnect = new WSConnect();
 let identity: Identity | null = null;
 
-document.addEventListener("DOMContentLoaded", async () => {
+signallingEmitter.addEventListener(SignalingEvent.CONNECTED, async () => {
   const peerType = document.getElementById("peer-type") as HTMLInputElement;
   if (peerType === null) {
     throw new Error("Cannot initialize session peer");

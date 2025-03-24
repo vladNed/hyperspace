@@ -17,11 +17,12 @@ var wsUpgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
+		settings := settings.GetInstance()
 		origin := r.Header.Get("Origin")
-		if origin == "" {
-			return false
+		if settings.AllowedOrigin == "" {
+			return origin != ""
 		}
-		return true
+		return origin == settings.AllowedOrigin
 	},
 }
 
@@ -88,7 +89,7 @@ func parseMessage(rawMsg SessionMessage, conn *websocket.Conn) (any, error) {
 		cacheClient := cache.NewRedis()
 		sessionData, err := cacheClient.Get(getOfferPayload.SessionId)
 		if err != nil {
-			return nil, fmt.Errorf("Offer does not exist")
+			return nil, fmt.Errorf("Session not found")
 		}
 
 		var offerRequest OfferRequest
