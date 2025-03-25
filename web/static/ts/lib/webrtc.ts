@@ -87,6 +87,7 @@ export class WebRTCPeer {
       if (!event) return;
       switch (this.peerConnection.connectionState) {
         case "connected":
+          console.log("Connected");
           this.state = PeerState.CONNECTED;
           peerEmitter.dispatchPeerEvent(PeerEvent.PEER_CONNECTED, {});
           break;

@@ -25,7 +25,7 @@ body {
 /* Layout */
 
 .main-container {
-    @apply max-w-[40rem] m-auto h-screen flex items-center px-6;
+    @apply max-w-[40rem] m-auto h-screen flex items-center px-6 overflow-x-hidden;
 }
 
 /* Action Selector */
@@ -35,11 +35,11 @@ body {
 }
 
 .action-selector > button {
-    @apply text-center w-full text-emerald-600 dark:text-emerald-400 font-bold rounded-2xl p-2 trans;
+    @apply text-center w-full text-orange-500 dark:text-orange-400 font-bold rounded-2xl p-2 trans;
 }
 
 .action-selector > button:hover {
-    @apply bg-neutral-200 dark:bg-neutral-700 cursor-pointer text-emerald-700 dark:text-emerald-400 trans;
+    @apply bg-neutral-200 dark:bg-neutral-700 cursor-pointer text-orange-700 dark:text-orange-400 trans;
 }
 
 .action-selector > span {
@@ -66,7 +66,7 @@ body {
 
 .drag-drop-container:hover,
 .drag-drop-container.drag-over {
-    @apply border-emerald-600 text-emerald-600;
+    @apply border-orange-600 text-orange-600;
 }
 
 /* END */
@@ -90,19 +90,26 @@ div.file-container {
 }
 
 .transfer-file a.transfer-icon {
-    @apply flex items-center justify-center p-2  rounded-full border border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400;
-    @apply hover:bg-emerald-500 hover:text-black trans hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-black;
-    @apply active:bg-emerald-600 active:text-black active:-translate-y-0.5 active:shadow-lg active:shadow-black;
+    @apply flex items-center justify-center p-2  rounded-full border border-orange-600 text-orange-600 dark:border-orange-400 dark:text-orange-400;
+    @apply hover:bg-orange-500 hover:text-black trans hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-black;
+    @apply active:bg-orange-600 active:text-black active:-translate-y-0.5 active:shadow-lg active:shadow-black;
 }
 
 .transfer-file > div.metadata > div.progress-top {
     @apply w-full bg-gray-200 rounded-full dark:bg-gray-700;
 }
 .transfer-file > div.metadata > div.progress-top > div.progress {
-    @apply bg-emerald-600 text-xs font-medium text-emerald-100 text-center p-0.5 leading-none rounded-full;
+    @apply bg-orange-600 text-xs font-medium text-orange-100 text-center p-0.5 leading-none rounded-full;
 }
 
 /* END */
+
+/* PIN Input */
+
+input.pin-input {
+    @apply w-16 h-20 text-center text-3xl font-bold border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500;
+    @apply dark:border-gray-700 dark:focus:ring-orange-400 dark:bg-neutral-800;
+}
 
 .app-input-container {
     @apply border-2 border-neutral-200 dark:border-neutral-600 rounded-2xl py-3 px-5 text-black dark:text-neutral-100 place-items-center flex;
@@ -125,11 +132,11 @@ div.file-container {
 }
 
 .app-button {
-    @apply bg-emerald-600 text-white p-2 rounded-xl trans w-full;
+    @apply bg-orange-600 text-white p-2 rounded-xl trans w-full;
 }
 
 .app-button:hover {
-    @apply bg-gradient-to-r from-emerald-600 to-green-500 -translate-y-1 shadow-lg dark:shadow-black;
+    @apply bg-gradient-to-r from-orange-600 to-purple-500 -translate-y-1 shadow-lg dark:shadow-black;
 }
 
 .trans {

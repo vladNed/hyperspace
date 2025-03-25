@@ -44,7 +44,10 @@ export enum PeerEvent {
 export enum SignalingEvent {
   CONNECTED = "connected",
   CLOSE = "close",
+  PROMPT_PIN = "prompt_pin",
+  PIN_RECEIVED = "pin_received",
   OFFER_FETCHED = "offerFetched",
+  REQUEST_ANSWER_WITH_PIN = "request_answer_with_pin",
 }
 
 export enum FileStatus {
@@ -56,6 +59,7 @@ export enum FileStatus {
 export enum SignalingState {
   IDLE,
   OFFER_SENT,
+  WAITING_FOR_CONNECTION,
   WAITING_FOR_ANSWER,
   GATHERING,
   ANSWER_SENT,
