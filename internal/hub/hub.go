@@ -2,6 +2,7 @@ package hub
 
 import (
 	"context"
+	"log"
 
 	"github.com/gorilla/websocket"
 
@@ -43,7 +44,9 @@ func (h *Hub) RemoveSession(conn *websocket.Conn) {
 	for key, value := range h.connections {
 		if value == conn {
 			delete(h.connections, key)
-			h.cache.Del(key)
+			if err := h.cache.Del(key); err != nil {
+				log.Println("ERROR: Cannot delete cached sessions ->>", err)
+			}
 			return
 		}
 	}
@@ -63,6 +66,15 @@ func (h *Hub) GetConnBySessionId(sessionId string) *websocket.Conn {
 
 func (h *Hub) BroadcastMessage(payload BroadcastPayload) {
 	h.broadcast <- payload
+}
+
+func (h *Hub) CheckConnHasActiveSession(conn *websocket.Conn) bool {
+	for _, value := range h.connections {
+		if value == conn {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *Hub) Run() {

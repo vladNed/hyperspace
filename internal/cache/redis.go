@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/vladNed/hyperspace/internal/settings"
+	utils "github.com/vladNed/hyperspace/internal/utils"
 )
 
 type Redis struct {
@@ -56,13 +57,16 @@ func NewRedis() *Redis {
 }
 
 func (rdb *Redis) Set(key string, value any, ttl int) error {
-	return rdb.client.Set(key, value, time.Duration(ttl)*time.Second).Err()
+	keyHash := utils.HashSessionId(key)
+	return rdb.client.Set(keyHash, value, time.Duration(ttl)*time.Second).Err()
 }
 
 func (rdb *Redis) Get(key string) (string, error) {
-	return rdb.client.Get(key).Result()
+	keyHash := utils.HashSessionId(key)
+	return rdb.client.Get(keyHash).Result()
 }
 
 func (rdb *Redis) Del(key string) error {
-	return rdb.client.Del(key).Err()
+	keyHash := utils.HashSessionId(key)
+	return rdb.client.Del(keyHash).Err()
 }

@@ -8,11 +8,13 @@ import (
 type SessionMessageType string
 
 const (
-	Offer    SessionMessageType = "offer"
-	GetOffer SessionMessageType = "get_offer"
-	Answer   SessionMessageType = "answer"
-	Error    SessionMessageType = "error"
-	Ok       SessionMessageType = "ok"
+	Offer             SessionMessageType = "offer"
+	GetOffer          SessionMessageType = "get_offer"
+	Answer            SessionMessageType = "answer"
+	Error             SessionMessageType = "error"
+	Ok                SessionMessageType = "ok"
+	GetAnswer         SessionMessageType = "get_answer"
+	ConfirmConnection SessionMessageType = "confirm_connection"
 )
 
 type ActionParameter string
@@ -71,4 +73,10 @@ type AnswerRequest struct {
 
 type AnswerResponse struct {
 	Message string `json:"message"`
+	Pin     string `json:"pin"`
+}
+
+type GetAnswerRequest struct {
+	SessionId string `json:"sessionId"`
+	Pin       string `json:"pin"`
 }

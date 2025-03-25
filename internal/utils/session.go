@@ -2,6 +2,9 @@ package utils
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
+	"log"
 	"math/big"
 )
 
@@ -19,28 +22,42 @@ var (
 		"threatening", "irritating", "courageous", "tasteless", "drab", "thoughtful", "straight",
 		"silent", "homeless", "humorous", "direful", "aboriginal", "thankful", "didactic", "damaged",
 		"jobless", "guttural", "special", "pricey", "cruel", "colorful", "right", "orange", "holistic",
-		"keen", "fretful",
+		"keen", "fretful", "squeamish",
 	}
 	words = []string{
-		"proposal", "ear", "phone", "competition", "reaction", "professor", "assumption", "actor",
-		"soup", "newspaper", "resolution", "university", "application", "storage", "session", "girlfriend",
-		"woman", "child", "administration", "role", "transportation", "assistance", "wedding", "ratio",
-		"hair", "association", "worker", "estate", "sympathy", "driver", "news", "oven", "cookie",
-		"inspector", "wealth", "response", "potato", "definition", "efficiency", "policy", "information",
-		"police", "dealer", "advertising", "leadership", "examination", "idea", "understanding", "statement",
-		"relation", "departure", "relationship", "replacement", "bird", "thought", "virus", "law", "tale",
-		"science", "committee", "personality", "growth", "bathroom", "confusion", "possibility", "disk",
-		"variation", "combination", "power", "manufacturer", "photo", "unit", "passenger", "knowledge",
-		"failure", "medicine", "dinner", "youth", "river", "king", "marriage", "mom", "diamond", "thing",
-		"secretary", "computer", "coffee", "explanation", "system", "message", "history", "moment",
+		"apple", "bicycle", "cloud", "dragon", "elephant", "forest", "guitar", "hammer", "island", "jacket",
+		"kitten", "lamp", "mountain", "notebook", "ocean", "pencil", "quilt", "river", "star", "table",
+		"umbrella", "vase", "window", "xylophone", "yacht", "zebra", "balloon", "cactus", "dolphin", "envelope",
+		"feather", "glacier", "honey", "igloo", "jungle", "key", "lizard", "magnet", "nest", "owl",
+		"piano", "quartz", "rocket", "sandwich", "tiger", "unicorn", "volcano", "whale", "yogurt", "zipper",
+		"bridge", "candle", "desert", "eagle", "fountain", "giraffe", "hat", "insect", "jewel", "kangaroo",
+		"leaf", "mirror", "noodle", "orchid", "pebble", "queen", "rose", "ship", "telescope", "utensil",
+		"village", "waterfall", "xenon", "year", "zucchini", "arrow", "bear", "cake", "diamond", "egg",
+		"fire", "goose", "house", "ink", "juice", "knife", "moon", "needle", "olive", "paint",
+		"ring", "stone", "thread", "violin", "wheel", "camera", "music", "movie", "game", "ball", "park",
 	}
 )
 
+// The standard implementation of generating a human readable session id.
+// For now, it is a combination of a 2 adjectives and a 2 nouns combined
+// with a dash.
+//
+// The possible number of session ids is 101 * 101 * 101 * 101 = 1.030.301
 func GetSessionId() string {
+	log.Println(len(words))
+	log.Println(len(adjectives))
 	adjId, _ := rand.Int(rand.Reader, big.NewInt(101))
 	nounId, _ := rand.Int(rand.Reader, big.NewInt(101))
 
 	adj := adjectives[adjId.Int64()]
 	noun := words[nounId.Int64()]
 	return adj + "-" + noun
+}
+
+// Hashes a session id which should be used when saving or fetching session
+// data from the cache.
+func HashSessionId(sessionId string) string {
+	h := sha256.New()
+	h.Write([]byte(sessionId))
+	return hex.EncodeToString(h.Sum(nil))
 }
