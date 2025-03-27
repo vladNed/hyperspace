@@ -1,4 +1,3 @@
-import { CHUNK_SIZE } from "./constants.js";
 import type { InitPayload } from "./types.js";
 
 export function encodeSDP(sdp: RTCSessionDescriptionInit): string {
@@ -71,16 +70,12 @@ export async function preProcessFile(file: File): Promise<InitPayload> {
   const totalData = file.size;
   const fileHash = await hashFile(file);
   let stages = 0;
-  for (let i = 0; i < totalData; i += CHUNK_SIZE) {
-    stages++;
-  }
 
   const metadata: InitPayload = {
     fileName: file.name,
     fileType: file.type,
     fileSize: totalData,
     hash: fileHash,
-    totalChunks: stages,
   };
 
   return metadata;

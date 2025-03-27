@@ -11,8 +11,7 @@ WORKDIR /app
 COPY package.json yarn.lock tailwind.config.js tsconfig.json ./
 RUN yarn install
 COPY web/ ./web/
-RUN yarn run build
-RUN yarn run build:styles
+RUN yarn run build && yarn run build:styles
 
 FROM alpine:3.19
 WORKDIR /app

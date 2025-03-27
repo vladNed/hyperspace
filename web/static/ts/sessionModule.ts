@@ -1,4 +1,4 @@
-import { MAX_FILE_SIZE, PeerEvent, SignalingEvent } from "./lib/constants.js";
+import { PeerEvent, SignalingEvent } from "./lib/constants.js";
 import { InitTransferMessage } from "./lib/types.js";
 import { peerEmitter } from "./lib/webrtc.js";
 import { signallingEmitter } from "./lib/websocket.js";
@@ -27,10 +27,6 @@ dropZone.addEventListener("drop", async (event) => {
   event.preventDefault();
   dropZone.classList.remove("drag-over");
   const file = event.dataTransfer!.files[0];
-  if (file.size > MAX_FILE_SIZE) {
-    alert("Cannot transfer files larger than 500MB");
-    return;
-  }
   peerEmitter.dispatchPeerEvent<InitTransferMessage>(PeerEvent.INIT_TRANSFER, {
     file,
   });

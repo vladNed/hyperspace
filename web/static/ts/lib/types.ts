@@ -36,7 +36,6 @@ export interface InitPayload {
   fileType: string;
   fileSize: number;
   hash: string;
-  totalChunks: number;
 }
 
 export interface FilePayload {

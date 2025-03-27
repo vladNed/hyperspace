@@ -82,7 +82,9 @@ func (h *Hub) Run() {
 		select {
 		case payload := <-h.broadcast:
 			for _, conn := range h.connections {
-				conn.WriteJSON(payload.Message)
+				if payload.Conn == conn {
+					conn.WriteJSON(payload.Message)
+				}
 			}
 		case <-h.ctx.Done():
 			return

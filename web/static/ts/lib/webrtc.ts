@@ -1,8 +1,8 @@
 import { Identity } from "./auth.js";
 import {
-  CHUNK_SIZE,
   FileStatus,
   ICE_SERVERS,
+  MAX_CHUNK_SIZE,
   PeerEvent,
   PeerMessageType,
   PeerState,
@@ -23,7 +23,6 @@ import {
   hashFile,
   preProcessFile,
 } from "./utils.js";
-import { signallingEmitter } from "./websocket.js";
 
 export class PeerEmitter extends EventTarget {
   dispatchPeerEvent<T>(name: PeerEvent, detail: T): void {
@@ -38,6 +37,7 @@ export class WebRTCPeer {
   private dataChannel: RTCDataChannel | null = null;
   private state: PeerState = PeerState.IDLE;
   private transferSession: TransferSession | null = null;
+  private currentChunkSize: number = 0;
 
   constructor(
     isOfferer: boolean = false,
@@ -87,7 +87,6 @@ export class WebRTCPeer {
       if (!event) return;
       switch (this.peerConnection.connectionState) {
         case "connected":
-          console.log("Connected");
           this.state = PeerState.CONNECTED;
           peerEmitter.dispatchPeerEvent(PeerEvent.PEER_CONNECTED, {});
           break;
@@ -114,8 +113,20 @@ export class WebRTCPeer {
 
     dataChannel.binaryType = "arraybuffer";
 
+    dataChannel.onopen = () => {
+      const chunkSize = Math.min(
+        MAX_CHUNK_SIZE,
+        this.peerConnection.sctp?.maxMessageSize || 0,
+      );
+      this.currentChunkSize = chunkSize - Math.ceil(chunkSize * 0.02);
+    };
+
     dataChannel.onclose = (event: Event) => {
       this.handleOnChannelDisconnect();
+    };
+
+    dataChannel.onerror = (event: RTCErrorEvent) => {
+      console.error(event);
     };
 
     dataChannel.onmessage = (event: MessageEvent) => {
@@ -130,8 +141,20 @@ export class WebRTCPeer {
       this.dataChannel = event.channel;
       this.dataChannel.binaryType = "arraybuffer";
 
+      this.dataChannel.onopen = () => {
+        const chunkSize = Math.min(
+          MAX_CHUNK_SIZE,
+          this.peerConnection.sctp?.maxMessageSize || 0,
+        );
+        this.currentChunkSize = chunkSize - Math.ceil(chunkSize * 0.02);
+      };
+
       this.dataChannel.onclose = (_event: Event) => {
         this.handleOnChannelDisconnect();
+      };
+
+      this.dataChannel.onerror = (event: RTCErrorEvent) => {
+        console.error(event);
       };
 
       this.dataChannel.onmessage = async (event: MessageEvent) => {
@@ -146,7 +169,6 @@ export class WebRTCPeer {
       await this.peerConnection.setLocalDescription(offer);
       this.state = PeerState.OFFER_CREATED;
     } catch (error) {
-      console.error("SDP ERROR: Cannot create new offer: ", error);
       throw new Error("SDP ERROR: Cannot create new offer");
     }
   }
@@ -156,7 +178,6 @@ export class WebRTCPeer {
       await this.peerConnection.setRemoteDescription(offer);
       this.state = PeerState.OFFER_ACCEPTED;
     } catch (error) {
-      console.error("SDP ERROR: Cannot set offer: ", error);
       throw new Error("SDP ERROR: Cannot set offer");
     }
   }
@@ -166,7 +187,6 @@ export class WebRTCPeer {
       await this.peerConnection.setRemoteDescription(answer);
       this.state = PeerState.ANSWER_SET;
     } catch (error) {
-      console.error("SDP ERROR: Cannot set answer: ", error);
       throw new Error("SDP ERROR: Cannot set answer");
     }
   }
@@ -177,7 +197,6 @@ export class WebRTCPeer {
       await this.peerConnection.setLocalDescription(answer);
       return answer;
     } catch (error) {
-      console.error("SDP ERROR: Cannot create new answer: ", error);
       throw new Error("SDP ERROR: Cannot create new answer");
     }
   }
@@ -281,6 +300,13 @@ export class WebRTCPeer {
   private async send(data: string): Promise<void>;
   private async send(data: ArrayBuffer): Promise<void>;
   private async send(data: string | ArrayBuffer): Promise<void> {
+    while (true) {
+      const buff = this.dataChannel?.bufferedAmount;
+      if (buff !== undefined && buff > 0) {
+        continue;
+      }
+      break;
+    }
     if (this.dataChannel === null) {
       throw new Error("Data channel not set");
     }
@@ -293,8 +319,7 @@ export class WebRTCPeer {
     } else {
       encryptedData = await this.identity.encrypt(data);
     }
-
-    this.dataChannel.send(encryptedData);
+    this.dataChannel?.send(encryptedData);
   }
 
   private completeTransfer(): void {
@@ -354,7 +379,7 @@ export class WebRTCPeer {
     peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {
       fileId: this.transferSession!.fileId,
       currentData: Math.min(
-        chunksIndex * CHUNK_SIZE || CHUNK_SIZE,
+        chunksIndex * this.currentChunkSize || this.currentChunkSize,
         this.transferSession!.metadata.fileSize,
       ),
       totalData: this.transferSession!.metadata.fileSize,
@@ -377,7 +402,10 @@ export class WebRTCPeer {
       return;
     }
     handleDisplayFileStatus(fileId, FileStatus.TRANSFERRING);
-    const nextChunkEnd = Math.min(dataSent! + CHUNK_SIZE, metadata.fileSize);
+    const nextChunkEnd = Math.min(
+      dataSent! + this.currentChunkSize,
+      metadata.fileSize,
+    );
     const chunk = file!.slice(dataSent, nextChunkEnd, metadata.fileType);
     const payloadData = await chunk.arrayBuffer();
     await this.send(payloadData);
@@ -403,12 +431,12 @@ export class WebRTCPeer {
       throw new Error("File hash mismatch");
     }
     handleDisplayFileStatus(fileId, FileStatus.DONE);
-    this.downloadFile(blob, metadata, fileId);
     peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {
       fileId,
       currentData: metadata.fileSize,
       totalData: metadata.fileSize,
     });
+    this.downloadFile(blob, metadata, fileId);
     this.state = PeerState.CONNECTED;
     this.transferSession = null;
   }

@@ -9,12 +9,7 @@ export const ICE_SERVERS = {
 /**
  * Standard WebRTC message size
  */
-export const CHUNK_SIZE = 64 * 1024; // 64KB
-
-/**
- * Maximum file size that can be transferred for V1
- */
-export const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
+export const MAX_CHUNK_SIZE = 256 * 1024; // 64KB
 
 export enum PeerState {
   IDLE,
