@@ -9,7 +9,7 @@ export function decodeSDP(sdp: string): RTCSessionDescriptionInit {
 }
 
 export async function getFileID(): Promise<string> {
-  const uuid = crypto.getRandomValues(new Uint8Array(12)).buffer;
+  const uuid = crypto.getRandomValues(new Uint8Array(8)).buffer;
   const timestamp = Date.now().toString();
   const timestampBuffer = new TextEncoder().encode(timestamp);
   const combinedBuffer = new Uint8Array(
@@ -36,6 +36,12 @@ function arrayBufferToHex(buffer: ArrayBuffer): string {
 
 export async function buildHash(chunks: Uint8Array[]): Promise<string> {
   const chunksQueue = [...chunks];
+  if (chunks.length === 1) {
+    const hash = await crypto.subtle.digest("SHA-256", chunks[0]);
+    const hashData = new Uint8Array(hash);
+    const hex = arrayBufferToHex(hashData);
+    return hex;
+  }
   while (chunksQueue.length > 1) {
     const [el1, el2] = chunksQueue.splice(0, 2);
     const combined = new Uint8Array(el1.byteLength + el2.byteLength);
@@ -61,7 +67,6 @@ export async function preProcessFile(
     const nextChunk = Math.min(currentEnd + chunkSize, file.size);
     const chunk = file.slice(currentEnd, nextChunk);
     currentEnd = nextChunk;
-    console.log(chunk);
     const data = await chunk.arrayBuffer();
     chunks.push(new Uint8Array(data));
   }
