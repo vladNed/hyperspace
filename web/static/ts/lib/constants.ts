@@ -9,7 +9,7 @@ export const ICE_SERVERS = {
 /**
  * Standard WebRTC message size
  */
-export const MAX_CHUNK_SIZE = 256 * 1024; // 64KB
+export const MAX_CHUNK_SIZE = 512 * 1024; // 512KB
 
 export enum PeerState {
   IDLE,
@@ -49,6 +49,7 @@ export enum FileStatus {
   PROCESSING = "Processing",
   TRANSFERRING = "Transferring",
   DONE = "Done",
+  FAILED = "Failed",
 }
 
 export enum SignalingState {

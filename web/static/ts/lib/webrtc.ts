@@ -8,7 +8,10 @@ import {
   PeerState,
   SignalingEvent,
 } from "./constants.js";
-import { handleDisplayFileStatus } from "./handlers.js";
+import {
+  handleDisplayFileStatus,
+  handleFailedFileTransfer,
+} from "./handlers.js";
 import type {
   InitPayload,
   PeerMessage,
@@ -19,8 +22,8 @@ import type {
 } from "./types.js";
 import {
   addDownloadLink,
+  buildHash,
   getFileID,
-  hashFile,
   preProcessFile,
 } from "./utils.js";
 
@@ -107,10 +110,7 @@ export class WebRTCPeer {
   }
 
   private setOffererDataChannel(): RTCDataChannel {
-    const dataChannel = this.peerConnection.createDataChannel(
-      "hypserspace-protocol",
-    );
-
+    const dataChannel = this.peerConnection.createDataChannel("main");
     dataChannel.binaryType = "arraybuffer";
 
     dataChannel.onopen = () => {
@@ -119,6 +119,7 @@ export class WebRTCPeer {
         this.peerConnection.sctp?.maxMessageSize || 0,
       );
       this.currentChunkSize = chunkSize - Math.ceil(chunkSize * 0.02);
+      console.log(this.currentChunkSize);
     };
 
     dataChannel.onclose = (event: Event) => {
@@ -126,7 +127,10 @@ export class WebRTCPeer {
     };
 
     dataChannel.onerror = (event: RTCErrorEvent) => {
+      handleFailedFileTransfer(this.transferSession!.fileId);
       console.error(event);
+      this.sendErr();
+      this.resetPeer();
     };
 
     dataChannel.onmessage = (event: MessageEvent) => {
@@ -147,6 +151,7 @@ export class WebRTCPeer {
           this.peerConnection.sctp?.maxMessageSize || 0,
         );
         this.currentChunkSize = chunkSize - Math.ceil(chunkSize * 0.02);
+        console.log(this.currentChunkSize);
       };
 
       this.dataChannel.onclose = (_event: Event) => {
@@ -154,7 +159,10 @@ export class WebRTCPeer {
       };
 
       this.dataChannel.onerror = (event: RTCErrorEvent) => {
+        handleFailedFileTransfer(this.transferSession!.fileId);
         console.error(event);
+        this.sendErr();
+        this.resetPeer();
       };
 
       this.dataChannel.onmessage = async (event: MessageEvent) => {
@@ -203,6 +211,7 @@ export class WebRTCPeer {
   private resetPeer(): void {
     this.transferSession = null;
     this.state = PeerState.CONNECTED;
+    console.log(this.getState());
   }
 
   /**
@@ -215,7 +224,7 @@ export class WebRTCPeer {
       return;
 
     try {
-      const metadata = await preProcessFile(file);
+      const metadata = await preProcessFile(file, this.currentChunkSize);
       const transferSession: TransferSession = {
         metadata,
         file,
@@ -244,33 +253,34 @@ export class WebRTCPeer {
    * incoming messages.
    */
   private async handleOnMessageEvent(event: MessageEvent): Promise<void> {
+    const eventData = (event as MessageEvent<ArrayBuffer>).data;
     const handlers = new Map([
       [
         PeerState.CONNECTED,
         async () => {
-          const eventData = (event as MessageEvent<ArrayBuffer>).data;
           const peerMessage = await this.decodeMessage(eventData);
-          await this.handleInitMessage(peerMessage.body as InitPayload);
+          if (peerMessage.type === PeerMessageType.INIT) {
+            await this.handleInitMessage(peerMessage.body as InitPayload);
+          }
         },
       ],
       [
         PeerState.RECEIVING,
         async () => {
-          await this.handlePayloadMessage(
-            (event as MessageEvent<ArrayBuffer>).data,
-          );
+          await this.handlePayloadMessage(eventData);
         },
       ],
       [
         PeerState.SENDING,
         async () => {
-          const eventData = (event as MessageEvent<ArrayBuffer>).data;
           const peerMessage = await this.decodeMessage(eventData);
           if (peerMessage.type === PeerMessageType.OK) {
             await this.handleOkMessage();
-          } else {
-            console.error("Unknown message type", peerMessage);
+            return;
           }
+          handleFailedFileTransfer(this.transferSession!.fileId);
+          this.sendErr();
+          this.resetPeer();
         },
       ],
     ]);
@@ -300,13 +310,6 @@ export class WebRTCPeer {
   private async send(data: string): Promise<void>;
   private async send(data: ArrayBuffer): Promise<void>;
   private async send(data: string | ArrayBuffer): Promise<void> {
-    while (true) {
-      const buff = this.dataChannel?.bufferedAmount;
-      if (buff !== undefined && buff > 0) {
-        continue;
-      }
-      break;
-    }
     if (this.dataChannel === null) {
       throw new Error("Data channel not set");
     }
@@ -333,6 +336,11 @@ export class WebRTCPeer {
   private async sendOk(): Promise<void> {
     let okMsg: PeerMessage = { type: PeerMessageType.OK };
     await this.send(JSON.stringify(okMsg));
+  }
+
+  private async sendErr(): Promise<void> {
+    let errMessage: PeerMessage = { type: PeerMessageType.ERROR };
+    await this.send(JSON.stringify(errMessage));
   }
 
   /**
@@ -425,9 +433,19 @@ export class WebRTCPeer {
       alert("File mismatch !! Transfer session might be corrupted.");
       throw new Error("File size mismatch");
     }
-    const hashBlob = await hashFile(blob);
-    if (hashBlob !== this.transferSession?.metadata.hash) {
+
+    const chunksBuffer = await Promise.all(
+      chunks!.map(async (chunk) => {
+        const data = await chunk.arrayBuffer();
+        return new Uint8Array(data);
+      }),
+    );
+
+    const hash = await buildHash(chunksBuffer);
+    if (hash !== this.transferSession?.metadata.hash) {
       alert("File mismatch !! Transfer session might be corrupted.");
+      handleFailedFileTransfer(fileId);
+      this.resetPeer();
       throw new Error("File hash mismatch");
     }
     handleDisplayFileStatus(fileId, FileStatus.DONE);

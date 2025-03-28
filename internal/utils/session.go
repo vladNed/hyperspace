@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"log"
 	"math/big"
 )
 
@@ -44,14 +43,14 @@ var (
 //
 // The possible number of session ids is 101 * 101 * 101 * 101 = 1.030.301
 func GetSessionId() string {
-	log.Println(len(words))
-	log.Println(len(adjectives))
 	adjId, _ := rand.Int(rand.Reader, big.NewInt(101))
 	nounId, _ := rand.Int(rand.Reader, big.NewInt(101))
+	adjId2, _ := rand.Int(rand.Reader, big.NewInt(101))
+	nounId2, _ := rand.Int(rand.Reader, big.NewInt(101))
 
 	adj := adjectives[adjId.Int64()]
 	noun := words[nounId.Int64()]
-	return adj + "-" + noun
+	return adj + "-" + noun + "-" + adjectives[adjId2.Int64()] + "-" + words[nounId2.Int64()]
 }
 
 // Hashes a session id which should be used when saving or fetching session

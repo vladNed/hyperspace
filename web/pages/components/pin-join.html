@@ -48,7 +48,23 @@
             disabled="true"
         />
     </div>
-    <button class="app-button" id="copy-btn">Copy Code</button>
+    <div class="w-full flex flex-col">
+        <button
+            class="app-button"
+            id="copy-btn"
+            popovertarget="copyPopover"
+            type="button"
+        >
+            Copy Code
+        </button>
+        <div
+            id="copyPopover"
+            popover="auto"
+            class="p-2 dark:bg-neutral-800 rounded-xl dark:text-white border"
+        >
+            Pin copied!
+        </div>
+    </div>
 </div>
 
 <script>
@@ -67,6 +83,5 @@
 
     document.getElementById("copy-btn").addEventListener("click", () => {
         navigator.clipboard.writeText(pin);
-        alert("Confirmation code copied !!");
     });
 </script>

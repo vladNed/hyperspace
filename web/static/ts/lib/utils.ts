@@ -8,44 +8,6 @@ export function decodeSDP(sdp: string): RTCSessionDescriptionInit {
   return JSON.parse(atob(sdp));
 }
 
-async function streamToBuffer(
-  stream: ReadableStream<Uint8Array>,
-): Promise<ArrayBuffer> {
-  const reader = stream.getReader();
-  const chunks = [];
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-    chunks.push(value);
-  }
-
-  return new Blob(chunks).arrayBuffer();
-}
-
-export async function hashFile(file: Blob): Promise<string>;
-export async function hashFile(file: File): Promise<string>;
-export async function hashFile(file: File | Blob): Promise<string> {
-  let hashBuffer: ArrayBuffer;
-  if (file instanceof Blob) {
-    hashBuffer = await crypto.subtle.digest(
-      "SHA-256",
-      await file.arrayBuffer(),
-    );
-  } else {
-    hashBuffer = await crypto.subtle.digest(
-      "SHA-256",
-      await streamToBuffer((file as File).stream()),
-    );
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return btoa(String.fromCharCode(...hashArray));
-  }
-
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return btoa(String.fromCharCode(...hashArray));
-}
-
 export async function getFileID(): Promise<string> {
   const uuid = crypto.getRandomValues(new Uint8Array(12)).buffer;
   const timestamp = Date.now().toString();
@@ -59,23 +21,56 @@ export async function getFileID(): Promise<string> {
 
   const hashBuffer = await crypto.subtle.digest("SHA-256", combinedBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray
-    .map((b) => ("00" + b.toString(16)).slice(-2))
-    .join("");
-
+  const hashHex = btoa(
+    hashArray.map((byte) => String.fromCharCode(byte)).join(""),
+  );
   return hashHex;
 }
 
-export async function preProcessFile(file: File): Promise<InitPayload> {
-  const totalData = file.size;
-  const fileHash = await hashFile(file);
-  let stages = 0;
+function arrayBufferToHex(buffer: ArrayBuffer): string {
+  const uint8Array = new Uint8Array(buffer);
+  return Array.from(uint8Array)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
 
+export async function buildHash(chunks: Uint8Array[]): Promise<string> {
+  const chunksQueue = [...chunks];
+  while (chunksQueue.length > 1) {
+    const [el1, el2] = chunksQueue.splice(0, 2);
+    const combined = new Uint8Array(el1.byteLength + el2.byteLength);
+    combined.set(new Uint8Array(el1), 0);
+    combined.set(new Uint8Array(el2), el1.byteLength);
+    const hash = await crypto.subtle.digest("SHA-256", combined);
+    const hashData = new Uint8Array(hash);
+    chunksQueue.push(hashData);
+  }
+
+  const hex = arrayBufferToHex(chunksQueue[0]);
+  return hex;
+}
+
+export async function preProcessFile(
+  file: File,
+  chunkSize: number,
+): Promise<InitPayload> {
+  const totalData = file.size;
+  const chunks: Uint8Array[] = [];
+  let currentEnd = 0;
+  while (currentEnd < file.size) {
+    const nextChunk = Math.min(currentEnd + chunkSize, file.size);
+    const chunk = file.slice(currentEnd, nextChunk);
+    currentEnd = nextChunk;
+    console.log(chunk);
+    const data = await chunk.arrayBuffer();
+    chunks.push(new Uint8Array(data));
+  }
+  const hash = await buildHash(chunks);
   const metadata: InitPayload = {
     fileName: file.name,
     fileType: file.type,
     fileSize: totalData,
-    hash: fileHash,
+    hash,
   };
 
   return metadata;
