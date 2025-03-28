@@ -7,7 +7,6 @@ import type {
   AnswerDataResponse,
   OfferDataResponse,
   Response,
-  SDPEventMessage,
   SessionResponse,
 } from "./types.js";
 import { decodeSDP, encodeSDP } from "./utils.js";
@@ -44,9 +43,15 @@ export class WSConnect {
           if (message.type == "error") {
             handleSessionResponseError(message.payload.message);
           } else if (message.type == "ok") {
-            this.state = SignalingState.WAITING_FOR_ANSWER;
+            this.state = SignalingState.WAITING_FOR_CONNECTION;
             handleDisplayStatusChange("Waiting for others to join");
           }
+          break;
+        case SignalingState.WAITING_FOR_CONNECTION:
+          const data = JSON.parse(event.data) as SessionResponse<any>;
+          if (data.type != "confirm_connection") break;
+          signallingEmitter.dispatchPeerEvent(SignalingEvent.PROMPT_PIN, {});
+          this.state = SignalingState.WAITING_FOR_ANSWER;
           break;
         case SignalingState.GATHERING:
           const offerDataMsg = JSON.parse(event.data) as SessionResponse<
@@ -70,10 +75,12 @@ export class WSConnect {
           }
           break;
         case SignalingState.WAITING_FOR_ANSWER:
-          const answerData = JSON.parse(event.data) as AnswerDataResponse;
+          const answerData = JSON.parse(
+            event.data,
+          ) as SessionResponse<AnswerDataResponse>;
           peerEmitter.dispatchPeerEvent(PeerEvent.ANSWER_CREATED, {
-            sdp: decodeSDP(answerData.answerSDP),
-            pubKey: answerData.pubKey,
+            sdp: decodeSDP(answerData.payload.answerSDP),
+            pubKey: answerData.payload.pubKey,
           });
 
           break;
@@ -81,6 +88,12 @@ export class WSConnect {
           const answerResponse = JSON.parse(event.data) as SessionResponse<any>;
           if (answerResponse.type == "error") {
             handleSessionResponseError(answerResponse.payload.message);
+          }
+          if ((answerResponse.type = "ok")) {
+            this.state = SignalingState.WAITING_FOR_CONNECTION;
+            signallingEmitter.dispatchPeerEvent(SignalingEvent.PIN_RECEIVED, {
+              pin: answerResponse.payload.pin,
+            });
           }
           break;
         default: {
@@ -143,6 +156,20 @@ export class WSConnect {
     this.client.send(JSON.stringify(payload));
     this.state = SignalingState.ANSWER_SENT;
     handleDisplayStatusChange("Connecting to peer");
+  }
+
+  public requestAnswer(pin: string, sessionId: string) {
+    const payload = {
+      type: "get_answer",
+      payload: {
+        sessionId,
+        pin,
+      },
+    };
+
+    this.client.send(JSON.stringify(payload));
+    this.state = SignalingState.WAITING_FOR_ANSWER;
+    handleDisplayStatusChange("Validating Pin");
   }
 
   public close() {

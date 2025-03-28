@@ -91,3 +91,21 @@ func connectingHandler(c *gin.Context) {
 		"sessionId": sessionParam,
 	})
 }
+
+func sessionPinHandler(c *gin.Context) {
+	actionParam := c.Param("action")
+	c.Header("Content-Type", "text/html")
+	action, err := GetActionParameter(actionParam)
+	if err != nil {
+		c.HTML(http.StatusNotFound, "not-found.html", gin.H{})
+		return
+	}
+	switch action {
+	case StartAction:
+		c.HTML(http.StatusOK, "pin-start.html", gin.H{})
+	case JoinAction:
+		c.HTML(http.StatusOK, "pin-join.html", gin.H{})
+	default:
+		c.HTML(http.StatusNotFound, "not-found.html", gin.H{})
+	}
+}

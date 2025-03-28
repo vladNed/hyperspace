@@ -1,5 +1,14 @@
 {{ template "top" .}}
 <input id="peer-type" type="text" disabled="true" value="offer" hidden="true" />
+<button
+    hidden="true"
+    id="pin-event-btn"
+    hx-get="/session/pin/start/"
+    hx-trigger="click"
+    hx-target="#content"
+    hx-swap="outer"
+></button>
+
 <div class="flex flex-col gap-5 w-full items-center m-auto">
     <div class="flex justify-center gap-4 text-4xl font-extrabold">
         <span>[*</span>
@@ -7,21 +16,48 @@
         <span>*]</span>
     </div>
     <div class="error-text" id="error-box" hidden="true"></div>
-    <p>Share this session id with another person to join and exchange files.</p>
-    <div class="w-full app-input-container">
-        <label class="activated" for="sessionId"> Session Id </label>
-        <input
-            type="text"
-            id="sessionId"
-            name="sessionId"
-            disabled="true"
-            value="{{ .sessionId }}"
-        />
-    </div>
-    <div class="w-full flex justify-center">
-        <i data-lucide="loader" class="animate-spin size-10"></i>
+    <div id="content" class="flex flex-col gap-5 w-full items-center">
+        <p>
+            Share this session id with another person to join and exchange
+            files.
+        </p>
+        <div class="w-full app-input-container">
+            <label class="activated" for="sessionId"> Session Id </label>
+            <input
+                type="button"
+                id="sessionId"
+                name="sessionId"
+                class="text-center w-full hover:text-emerald-500 active:text-red-500 trans"
+                readonly
+                value="{{ .sessionId }}"
+                popovertarget="selectionIdCopy"
+            />
+            <div
+                id="selectionIdCopy"
+                popover="auto"
+                class="p-2 dark:bg-neutral-800 rounded-xl dark:text-white border"
+            >
+                Session ID copied
+            </div>
+        </div>
+        <div class="flex justify-center">
+            <div class="flex gap-2 m-auto">
+                <i
+                    data-lucide="corner-left-up"
+                    class="size-6 text-neutral-400 -translate-y-2"
+                ></i>
+                <span class="text-neutral-400">Click the text to copy!</span>
+            </div>
+        </div>
     </div>
 </div>
 
 <script src="/static/js/session.js" type="module"></script>
+<script>
+    const inputId = document.getElementById("sessionId");
+    inputId.addEventListener("click", () => {
+        inputId.select();
+        navigator.clipboard.writeText(inputId.value);
+    });
+</script>
 {{ template "bottom" .}}

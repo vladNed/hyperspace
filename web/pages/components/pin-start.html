@@ -1,0 +1,18 @@
+<div class="flex flex-col gap-11 items-center m-auto">
+    <p>Insert the confirmation pin from the person that connected to you.</p>
+    <div class="flex items-center space-x-2">
+        <!-- First 3 digits -->
+        <input type="text" maxlength="1" class="pin-input" id="input1" />
+        <input type="text" maxlength="1" class="pin-input" id="input2" />
+        <input type="text" maxlength="1" class="pin-input" id="input3" />
+        <!-- Dash -->
+        <span class="text-xl font-bold">-</span>
+        <!-- Last 3 digits -->
+        <input type="text" maxlength="1" class="pin-input" id="input4" />
+        <input type="text" maxlength="1" class="pin-input" id="input5" />
+        <input type="text" maxlength="1" class="pin-input" id="input6" />
+    </div>
+    <button class="app-button" id="pin-continue-btn">Continue</button>
+</div>
+
+<script src="/static/js/pinModule.js" type="module"></script>

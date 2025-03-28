@@ -7,6 +7,7 @@ import {
 import type {
   FileUpdateEvent,
   InitTransferMessage,
+  PinReceivedEvent,
   ReceiveTransferMessage,
   SDPEventMessage,
 } from "./lib/types.js";
@@ -34,6 +35,23 @@ signallingEmitter.addEventListener(SignalingEvent.CONNECTED, async () => {
   }
 });
 
+signallingEmitter.addEventListener(SignalingEvent.PROMPT_PIN, async () => {
+  const pinBtn = document.getElementById("pin-event-btn") as HTMLButtonElement;
+  pinBtn.click();
+  handleDisplayStatusChange("Confirmation Pin");
+});
+
+signallingEmitter.addEventListener(
+  SignalingEvent.PIN_RECEIVED,
+  async (event) => {
+    const { detail } = event as CustomEvent<PinReceivedEvent>;
+    sessionStorage.setItem("senders-x-pin", detail.pin);
+    const pinEventBtn = document.getElementById("pin-event-btn")!;
+    pinEventBtn.click();
+    handleDisplayStatusChange("Confirmation Pin");
+  },
+);
+
 const startBtn = document.getElementById("session-start-btn")!;
 if (startBtn !== null) {
   startBtn.addEventListener("click", async () => {
@@ -55,6 +73,7 @@ peerEmitter.addEventListener(PeerEvent.OFFER_CREATED, async (event: Event) => {
   ) as HTMLInputElement;
   let pubKey = await identity!.exportPubKey();
   signallingChannel.sendOffer(detail.sdp, sessionIdInput.value, pubKey);
+  sessionStorage.setItem("senders-x-session", sessionIdInput.value);
 });
 
 peerEmitter.addEventListener(PeerEvent.OFFER_ACCEPTED, async (event: Event) => {
@@ -62,6 +81,7 @@ peerEmitter.addEventListener(PeerEvent.OFFER_ACCEPTED, async (event: Event) => {
   const sessionInput = document.getElementById("sessionId") as HTMLInputElement;
   let pubKey = await identity!.exportPubKey();
   signallingChannel.sendAnswer(detail.sdp, sessionInput.value, pubKey);
+  sessionStorage.setItem("senders-x-session", sessionInput.value);
 });
 
 peerEmitter.addEventListener(PeerEvent.ANSWER_CREATED, async (event: Event) => {
@@ -78,8 +98,8 @@ peerEmitter.addEventListener(PeerEvent.ANSWER_CREATED, async (event: Event) => {
 
 peerEmitter.addEventListener(PeerEvent.PEER_CONNECTED, async (event: Event) => {
   handleDisplayStatusChange("Connected to peer");
-  const sessionInput = document.getElementById("sessionId") as HTMLInputElement;
-  htmx.ajax("GET", "/session/connect/" + sessionInput.value + "/", {
+  const sessionId = sessionStorage.getItem("senders-x-session")!;
+  htmx.ajax("GET", "/session/connect/" + sessionId + "/", {
     target: "#main-container",
     swap: "outerHTML",
   });
@@ -102,8 +122,6 @@ peerEmitter.addEventListener(PeerEvent.FILE_UPDATE, (event) => {
   ) as HTMLDivElement;
 
   const progress = Math.round((currentData / totalData) * 100);
-  console.log("DATA :: ", currentData, totalData);
-
   progressBar.innerText = `${progress}%`;
   progressBar.style.width = `${progress}%`;
 
@@ -146,3 +164,11 @@ peerEmitter.addEventListener(PeerEvent.PEER_STATUS_CHANGED, (event) => {
   const { detail } = event as CustomEvent<{ status: string }>;
   handleDisplayStatusChange(detail.status);
 });
+
+signallingEmitter.addEventListener(
+  SignalingEvent.REQUEST_ANSWER_WITH_PIN,
+  (event) => {
+    const { detail } = event as CustomEvent<{ pin: string; sessionId: string }>; // TODO: refactor this into type
+    signallingChannel.requestAnswer(detail.pin, detail.sessionId);
+  },
+);

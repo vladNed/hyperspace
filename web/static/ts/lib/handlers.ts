@@ -23,6 +23,20 @@ export function handleDisplayStatusChange(message: string): void {
   statusInput.textContent = message;
 }
 
+export function handleFailedFileTransfer(fileId: string): void {
+  const fileDiv = document.getElementById(fileId) as HTMLDivElement;
+  const progressBar = fileDiv.querySelector(
+    ".metadata  .progress-top  .progress",
+  ) as HTMLDivElement;
+  progressBar.innerText = "0%";
+  progressBar.style.width = "0%";
+  const icon = fileDiv.querySelector(".transfer-icon");
+  icon!.innerHTML =
+    ' <i data-lucide="cloud-alert" class="size-6 text-red-500"></i>';
+  handleDisplayFileStatus(fileId, FileStatus.FAILED);
+  lucide.createIcons();
+}
+
 export function handleDisplayFileStatus(
   fileId: string,
   status: FileStatus,

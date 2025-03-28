@@ -6,25 +6,36 @@
     value="answer"
     hidden="true"
 />
+<button
+    hidden="true"
+    id="pin-event-btn"
+    hx-get="/session/pin/join/"
+    hx-trigger="click"
+    hx-target="#content"
+    hx-swap="outer"
+></button>
+
 <div class="flex flex-col gap-5 w-full items-center m-auto">
     <div class="flex justify-center gap-4 text-4xl font-extrabold">
         <span>[*</span>
         <div id="status">Senders</div>
         <span>*]</span>
     </div>
-    <div class="error-text" id="error-box" hidden="true"></div>
-    <p>Paste the session id you want to join.</p>
-    <div class="w-full app-input-container">
-        <label for="sessionId"> Session Id </label>
-        <input
-            type="text"
-            id="sessionId"
-            name="sessionId"
-            autocomplete="off"
-            value=""
-        />
+    <div id="content" class="flex flex-col gap-5 w-full items-center">
+        <div class="error-text" id="error-box" hidden="true"></div>
+        <p>Paste the session id you want to join.</p>
+        <div class="w-full app-input-container">
+            <label for="sessionId"> Session Id </label>
+            <input
+                type="text"
+                id="sessionId"
+                name="sessionId"
+                autocomplete="off"
+                value=""
+            />
+        </div>
+        <button class="app-button" id="session-start-btn">Join Session</button>
     </div>
-    <button class="app-button" id="session-start-btn">Join Session</button>
 </div>
 
 <script src="/static/js/session.js" type="module"></script>

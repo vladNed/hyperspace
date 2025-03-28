@@ -26,6 +26,7 @@ func (s *Server) RegisterRoutes() {
 	s.engine.GET("/", indexHandler)
 	s.engine.GET("/session/:action", connectHandler)
 	s.engine.GET("/session/connect/:sessionId/", sessionCommonHandler)
+	s.engine.GET("/session/pin/:action/", sessionPinHandler)
 	s.engine.GET("/connect/:sessionId/", connectingHandler)
 }
 

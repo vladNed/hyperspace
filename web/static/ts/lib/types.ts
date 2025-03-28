@@ -1,7 +1,7 @@
 import { PeerMessageType } from "./constants";
 
 export interface SessionResponse<T> {
-  type: "ok" | "error";
+  type: "ok" | "error" | "confirm_connection";
   payload: T;
 }
 
@@ -36,7 +36,6 @@ export interface InitPayload {
   fileType: string;
   fileSize: number;
   hash: string;
-  totalChunks: number;
 }
 
 export interface FilePayload {
@@ -63,6 +62,10 @@ export interface SDPEventMessage {
   sdp: RTCSessionDescriptionInit;
 }
 
+export interface PinReceivedEvent {
+  pin: string;
+}
+
 export interface InitTransferMessage {
   file: File;
 }
@@ -77,3 +80,5 @@ export interface FileUpdateEvent {
   totalData: number;
   currentData: number;
 }
+
+export interface ConnectionConfirmEvent {}

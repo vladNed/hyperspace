@@ -1,0 +1,87 @@
+<div class="flex flex-col gap-11 items-center m-auto">
+    <p>Share this pin with the person you are connecting.</p>
+    <div class="flex items-center space-x-2">
+        <!-- First 3 digits -->
+        <input
+            type="text"
+            maxlength="1"
+            class="pin-input"
+            id="input1"
+            disabled="true"
+        />
+        <input
+            type="text"
+            maxlength="1"
+            class="pin-input"
+            id="input2"
+            disabled="true"
+        />
+        <input
+            type="text"
+            maxlength="1"
+            class="pin-input"
+            id="input3"
+            disabled="true"
+        />
+        <!-- Dash -->
+        <span class="text-xl font-bold">-</span>
+        <!-- Last 3 digits -->
+        <input
+            type="text"
+            maxlength="1"
+            class="pin-input"
+            id="input4"
+            disabled="true"
+        />
+        <input
+            type="text"
+            maxlength="1"
+            class="pin-input"
+            id="input5"
+            disabled="true"
+        />
+        <input
+            type="text"
+            maxlength="1"
+            class="pin-input"
+            id="input6"
+            disabled="true"
+        />
+    </div>
+    <div class="w-full flex flex-col">
+        <button
+            class="app-button"
+            id="copy-btn"
+            popovertarget="copyPopover"
+            type="button"
+        >
+            Copy Code
+        </button>
+        <div
+            id="copyPopover"
+            popover="auto"
+            class="p-2 dark:bg-neutral-800 rounded-xl dark:text-white border"
+        >
+            Pin copied!
+        </div>
+    </div>
+</div>
+
+<script>
+    const pin = sessionStorage.getItem("senders-x-pin");
+    if (pin == null) {
+        console.error("No pin");
+    } else {
+        const inputs = document.getElementsByClassName("pin-input");
+        pin.split("").forEach((digit, index) => {
+            if (inputs[index]) {
+                // Ensure input exists
+                inputs[index].value = digit;
+            }
+        });
+    }
+
+    document.getElementById("copy-btn").addEventListener("click", () => {
+        navigator.clipboard.writeText(pin);
+    });
+</script>

@@ -25,7 +25,7 @@ body {
 /* Layout */
 
 .main-container {
-    @apply max-w-[40rem] m-auto h-screen flex items-center px-6;
+    @apply max-w-[40rem] m-auto h-screen flex items-center px-6 overflow-x-hidden;
 }
 
 /* Action Selector */
@@ -35,7 +35,7 @@ body {
 }
 
 .action-selector > button {
-    @apply text-center w-full text-emerald-600 dark:text-emerald-400 font-bold rounded-2xl p-2 trans;
+    @apply text-center w-full text-emerald-500 dark:text-emerald-400 font-bold rounded-2xl p-2 trans;
 }
 
 .action-selector > button:hover {
@@ -96,13 +96,20 @@ div.file-container {
 }
 
 .transfer-file > div.metadata > div.progress-top {
-    @apply w-full bg-gray-200 rounded-full dark:bg-gray-700;
+    @apply w-full bg-gray-200 rounded-full dark:bg-gray-700 trans;
 }
 .transfer-file > div.metadata > div.progress-top > div.progress {
-    @apply bg-emerald-600 text-xs font-medium text-emerald-100 text-center p-0.5 leading-none rounded-full;
+    @apply bg-emerald-600 text-xs font-medium text-emerald-100 text-center p-0.5 leading-none rounded-full trans;
 }
 
 /* END */
+
+/* PIN Input */
+
+input.pin-input {
+    @apply w-16 h-20 text-center text-3xl font-bold border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500;
+    @apply dark:border-gray-700 dark:focus:ring-emerald-400 dark:bg-neutral-800;
+}
 
 .app-input-container {
     @apply border-2 border-neutral-200 dark:border-neutral-600 rounded-2xl py-3 px-5 text-black dark:text-neutral-100 place-items-center flex;
@@ -129,7 +136,7 @@ div.file-container {
 }
 
 .app-button:hover {
-    @apply bg-gradient-to-r from-emerald-600 to-green-500 -translate-y-1 shadow-lg dark:shadow-black;
+    @apply bg-gradient-to-r from-emerald-600 to-green-600 -translate-y-1 shadow-lg dark:shadow-black;
 }
 
 .trans {
