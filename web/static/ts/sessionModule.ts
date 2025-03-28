@@ -27,7 +27,6 @@ dropZone.addEventListener("drop", async (event) => {
   event.preventDefault();
   dropZone.classList.remove("drag-over");
   const file = event.dataTransfer!.files[0];
-  console.log("1. Drop event send with file");
   peerEmitter.dispatchPeerEvent<InitTransferMessage>(PeerEvent.INIT_TRANSFER, {
     file,
   });

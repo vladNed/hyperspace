@@ -9,8 +9,11 @@ import {
   SignalingEvent,
 } from "./constants.js";
 import {
+  handleClearDb,
   handleDisplayFileStatus,
   handleFailedFileTransfer,
+  handleRetrieveFromDisk,
+  handleSaveToDisk,
 } from "./handlers.js";
 import type {
   InitPayload,
@@ -113,13 +116,14 @@ export class WebRTCPeer {
     const dataChannel = this.peerConnection.createDataChannel("main");
     dataChannel.binaryType = "arraybuffer";
 
-    dataChannel.onopen = () => {
+    dataChannel.onopen = async () => {
       const chunkSize = Math.min(
         MAX_CHUNK_SIZE,
         this.peerConnection.sctp?.maxMessageSize || 0,
       );
       this.currentChunkSize = chunkSize - Math.ceil(chunkSize * 0.02);
-      console.log(this.currentChunkSize);
+      await handleClearDb();
+      sessionStorage.removeItem("__SdbVersion");
     };
 
     dataChannel.onclose = (event: Event) => {
@@ -127,9 +131,15 @@ export class WebRTCPeer {
     };
 
     dataChannel.onerror = (event: RTCErrorEvent) => {
+      if (!this.transferSession) {
+        console.error("No transfer session", event.error);
+        return;
+      }
       handleFailedFileTransfer(this.transferSession!.fileId);
       console.error(event);
-      this.sendErr();
+      if (dataChannel.readyState == "open") {
+        this.sendErr();
+      }
       this.resetPeer();
     };
 
@@ -145,13 +155,13 @@ export class WebRTCPeer {
       this.dataChannel = event.channel;
       this.dataChannel.binaryType = "arraybuffer";
 
-      this.dataChannel.onopen = () => {
+      this.dataChannel.onopen = async () => {
         const chunkSize = Math.min(
           MAX_CHUNK_SIZE,
           this.peerConnection.sctp?.maxMessageSize || 0,
         );
         this.currentChunkSize = chunkSize - Math.ceil(chunkSize * 0.02);
-        console.log(this.currentChunkSize);
+        await handleClearDb();
       };
 
       this.dataChannel.onclose = (_event: Event) => {
@@ -159,9 +169,15 @@ export class WebRTCPeer {
       };
 
       this.dataChannel.onerror = (event: RTCErrorEvent) => {
+        if (!this.transferSession) {
+          console.error("No transfer session", event.error);
+          return;
+        }
         handleFailedFileTransfer(this.transferSession!.fileId);
         console.error(event);
-        this.sendErr();
+        if (this.dataChannel?.readyState == "open") {
+          this.sendErr();
+        }
         this.resetPeer();
       };
 
@@ -211,7 +227,6 @@ export class WebRTCPeer {
   private resetPeer(): void {
     this.transferSession = null;
     this.state = PeerState.CONNECTED;
-    console.log(this.getState());
   }
 
   /**
@@ -220,8 +235,10 @@ export class WebRTCPeer {
    * @param fileId The file id which is used to identity which component in FE to update.
    */
   public async initTransfer(file: File, fileId: string): Promise<void> {
-    if (this.state !== PeerState.CONNECTED && this.transferSession !== null)
+    if (this.state !== PeerState.CONNECTED && this.transferSession !== null) {
+      console.error("Peer not in correct state", this.state);
       return;
+    }
 
     try {
       const metadata = await preProcessFile(file, this.currentChunkSize);
@@ -322,7 +339,14 @@ export class WebRTCPeer {
     } else {
       encryptedData = await this.identity.encrypt(data);
     }
-    this.dataChannel?.send(encryptedData);
+
+    try {
+      this.dataChannel?.send(encryptedData);
+    } catch (error) {
+      console.error("Could not send data:", error);
+      handleFailedFileTransfer(this.transferSession!.fileId);
+      this.resetPeer();
+    }
   }
 
   private completeTransfer(): void {
@@ -379,22 +403,20 @@ export class WebRTCPeer {
       return;
     }
     const decryptedPayload = await this.identity.decrypt(payload);
-    const { chunksIndex } = this.transferSession!;
-    handleDisplayFileStatus(
-      this.transferSession!.fileId,
-      FileStatus.TRANSFERRING,
-    );
+    const { chunksIndex, metadata, fileId } = this.transferSession!;
+    handleDisplayFileStatus(fileId, FileStatus.TRANSFERRING);
     peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {
-      fileId: this.transferSession!.fileId,
+      fileId,
       currentData: Math.min(
         chunksIndex * this.currentChunkSize || this.currentChunkSize,
-        this.transferSession!.metadata.fileSize,
+        metadata.fileSize,
       ),
-      totalData: this.transferSession!.metadata.fileSize,
+      totalData: metadata.fileSize,
     });
 
     const blob = new Blob([decryptedPayload]);
-    this.transferSession!.chunks!.push(blob);
+    const chunkIndex = this.transferSession!.chunksIndex + 1;
+    await handleSaveToDisk(blob, chunkIndex, fileId);
     this.transferSession!.chunksIndex++;
     await this.sendOk();
   }
@@ -427,27 +449,32 @@ export class WebRTCPeer {
   }
 
   private async handleEOF(): Promise<void> {
-    const { chunks, metadata, fileId } = this.transferSession!;
-    const blob = new Blob(chunks!, { type: metadata.fileType });
-    if (blob.size !== metadata.fileSize) {
-      alert("File mismatch !! Transfer session might be corrupted.");
-      throw new Error("File size mismatch");
-    }
+    const { metadata, fileId, chunksIndex } = this.transferSession!;
+    // if (blob.size !== metadata.fileSize) {
+    //   console.error(
+    //     `File size mismatch: ${blob.size} !== ${metadata.fileSize}`,
+    //   );
+    //   alert("File mismatch !! Transfer session might be corrupted.");
+    //   this.resetPeer();
+    //   throw new Error("File size mismatch");
+    // }
 
-    const chunksBuffer = await Promise.all(
-      chunks!.map(async (chunk) => {
-        const data = await chunk.arrayBuffer();
-        return new Uint8Array(data);
-      }),
-    );
+    // const chunksBuffer = await Promise.all(
+    //   chunksData!.map(async (chunk) => {
+    //     const data = await chunk.arrayBuffer();
+    //     return new Uint8Array(data);
+    //   }),
+    // );
 
-    const hash = await buildHash(chunksBuffer);
-    if (hash !== this.transferSession?.metadata.hash) {
-      alert("File mismatch !! Transfer session might be corrupted.");
-      handleFailedFileTransfer(fileId);
-      this.resetPeer();
-      throw new Error("File hash mismatch");
-    }
+    // const hash = await buildHash(chunksBuffer);
+    // if (hash !== this.transferSession?.metadata.hash) {
+    //   alert("File mismatch !! Transfer session might be corrupted.");
+    //   handleFailedFileTransfer(fileId);
+    //   this.resetPeer();
+    //   throw new Error("File hash mismatch");
+    // }
+    const chunks = await handleRetrieveFromDisk(fileId);
+    const blob = new Blob(chunks, { type: metadata.fileType });
     handleDisplayFileStatus(fileId, FileStatus.DONE);
     peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {
       fileId,

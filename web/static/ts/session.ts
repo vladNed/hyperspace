@@ -106,7 +106,10 @@ peerEmitter.addEventListener(PeerEvent.PEER_CONNECTED, async (event: Event) => {
 });
 
 peerEmitter.addEventListener(PeerEvent.INIT_TRANSFER, async (event) => {
-  if (localPeer!.getState() !== PeerState.CONNECTED) return;
+  if (localPeer!.getState() !== PeerState.CONNECTED) {
+    console.error("Peer not in correct state", localPeer!.getState());
+    return;
+  }
   const { detail } = event as CustomEvent<InitTransferMessage>;
   const fileId = await getFileID();
   addFileDiv(fileId, detail.file.name, false);

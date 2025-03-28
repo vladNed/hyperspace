@@ -46,3 +46,81 @@ export function handleDisplayFileStatus(
     statusElement.textContent = status.valueOf();
   }
 }
+
+export async function handleSaveToDisk(
+  chunk: Blob,
+  chunkId: number,
+  fileId: string,
+): Promise<void> {
+  const request = window.indexedDB.open("tempStorage", 2);
+  return new Promise<void>((resolve, reject) => {
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains("files")) {
+        const newStore = db.createObjectStore("files", {
+          keyPath: ["fileId", "chunkIndex"],
+        });
+        newStore.createIndex("fileId", "fileId", { unique: false });
+      }
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction("files", "readwrite");
+      const data = {
+        fileId,
+        chunkIndex: chunkId,
+        chunk,
+      };
+      tx.objectStore("files").put(data);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject("Failed to save chunk to disk");
+    };
+
+    request.onerror = (e) => reject(e);
+  });
+}
+
+export async function handleRetrieveFromDisk(fileId: string): Promise<Blob[]> {
+  const request = window.indexedDB.open("tempStorage", 2);
+  return new Promise<Blob[]>((resolve, reject) => {
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction("files", "readonly");
+      const store = tx.objectStore("files");
+      const storeIndex = store.index("fileId");
+      const keyRangeVal = IDBKeyRange.only(fileId);
+      const chunks: Blob[] = [];
+
+      storeIndex.openCursor(keyRangeVal).onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest).result;
+        if (cursor) {
+          chunks.push(cursor.value.chunk);
+          cursor.continue();
+        } else {
+          tx.oncomplete = () => resolve(chunks);
+        }
+      };
+    };
+
+    request.onerror = () => reject("Failed to open database");
+  });
+}
+
+export async function handleClearDb(): Promise<void> {
+  const request = window.indexedDB.deleteDatabase("tempStorage");
+  return new Promise<void>((resolve, reject) => {
+    request.onsuccess = () => resolve();
+    request.onerror = () => {
+      console.error("Could not delete db");
+      reject("Failed to delete database");
+    };
+  });
+}
+
+window.onbeforeunload = function () {
+  const request = indexedDB.deleteDatabase("tempStorage");
+
+  request.onerror = function (event) {
+    console.error("Error deleting database:");
+  };
+};
