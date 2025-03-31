@@ -28,7 +28,6 @@ export async function getFileID(): Promise<string> {
 }
 
 function formatFileSize(bytes: number): string {
-  console.log(bytes);
   const units = ["B", "KB", "MB", "GB", "TB"];
   let size = bytes;
   let unitIndex = 0;

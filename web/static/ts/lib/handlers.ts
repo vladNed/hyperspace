@@ -59,7 +59,6 @@ export function handleDisplayFileStatus(
   const iconDiv = fileDiv.querySelector(
     ".content-body .low-bar .transfer-icon",
   );
-  console.log(">>>>>> WILL CHANGE STATUS TOOOO ->>>>", status.valueOf());
   switch (status) {
     case FileStatus.TRANSFERRING:
       if (receiving) {
@@ -79,9 +78,7 @@ export function handleDisplayFileStatus(
       const closeBtnCancel = fileDiv.querySelector(
         ".content-body #close-button-body .close-button",
       ) as HTMLButtonElement;
-      console.log("Close btn");
       closeBtnCancel.onclick = () => handleRemoveFileDiv(fileId);
-      console.log(closeBtnCancel);
       break;
     case FileStatus.SENT:
     case FileStatus.FAILED:
@@ -90,7 +87,6 @@ export function handleDisplayFileStatus(
         ".content-body #close-button-body .close-button",
       ) as HTMLButtonElement;
       closeBtn.onclick = () => handleRemoveFileDiv(fileId);
-      console.log("Just added a new onclick");
       break;
     default:
       break;
@@ -168,7 +164,6 @@ export async function handleClearDb(): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     request.onsuccess = () => resolve();
     request.onerror = () => {
-      console.error("Could not delete db");
       reject("Failed to delete database");
     };
   });

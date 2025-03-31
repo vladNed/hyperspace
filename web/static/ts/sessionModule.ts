@@ -50,7 +50,6 @@ if (inputFile === null) {
 }
 inputFile.addEventListener("change", async (event) => {
   event.preventDefault();
-  console.log("triggered", event);
   const file = (inputFile as HTMLInputElement).files![0];
   peerEmitter.dispatchPeerEvent<InitTransferMessage>(PeerEvent.INIT_TRANSFER, {
     file,

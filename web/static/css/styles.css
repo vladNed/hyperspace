@@ -131,7 +131,7 @@ input.pin-input {
 /* Exit button */
 
 .exit-button {
-    @apply py-1 px-4 hover:bg-emerald-500 hover:text-white trans rounded-lg border hover:border-emerald-500;
+    @apply py-1 px-4 hover:bg-emerald-600 hover:text-white trans rounded-lg border hover:border-emerald-600;
 }
 
 .app-input-container {
