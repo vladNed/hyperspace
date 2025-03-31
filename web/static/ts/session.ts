@@ -16,8 +16,6 @@ import { addFileDiv, getFileID } from "./lib/utils.js";
 import { peerEmitter, WebRTCPeer } from "./lib/webrtc.js";
 import { signallingEmitter, WSConnect } from "./lib/websocket.js";
 
-lucide.createIcons();
-
 let localPeer: WebRTCPeer | null = null;
 let signallingChannel: WSConnect = new WSConnect();
 let identity: Identity | null = null;
@@ -46,7 +44,7 @@ signallingEmitter.addEventListener(
   SignalingEvent.PIN_RECEIVED,
   async (event) => {
     const { detail } = event as CustomEvent<PinReceivedEvent>;
-    sessionStorage.setItem("senders-x-pin", detail.pin);
+    sessionStorage.setItem("SafeFiles-x-pin", detail.pin);
     const pinEventBtn = document.getElementById("pin-event-btn")!;
     pinEventBtn.click();
     handleDisplayStatusChange("Confirmation Pin");
@@ -82,7 +80,7 @@ peerEmitter.addEventListener(PeerEvent.OFFER_CREATED, async (event: Event) => {
   ) as HTMLInputElement;
   let pubKey = await identity!.exportPubKey();
   signallingChannel.sendOffer(detail.sdp, sessionIdInput.value, pubKey);
-  sessionStorage.setItem("senders-x-session", sessionIdInput.value);
+  sessionStorage.setItem("SafeFiles-x-session", sessionIdInput.value);
 });
 
 peerEmitter.addEventListener(PeerEvent.OFFER_ACCEPTED, async (event: Event) => {
@@ -90,7 +88,7 @@ peerEmitter.addEventListener(PeerEvent.OFFER_ACCEPTED, async (event: Event) => {
   const sessionInput = document.getElementById("sessionId") as HTMLInputElement;
   let pubKey = await identity!.exportPubKey();
   signallingChannel.sendAnswer(detail.sdp, sessionInput.value, pubKey);
-  sessionStorage.setItem("senders-x-session", sessionInput.value);
+  sessionStorage.setItem("SafeFiles-x-session", sessionInput.value);
 });
 
 peerEmitter.addEventListener(PeerEvent.ANSWER_CREATED, async (event: Event) => {
@@ -107,7 +105,7 @@ peerEmitter.addEventListener(PeerEvent.ANSWER_CREATED, async (event: Event) => {
 
 peerEmitter.addEventListener(PeerEvent.PEER_CONNECTED, async (event: Event) => {
   handleDisplayStatusChange("Connected to peer");
-  const sessionId = sessionStorage.getItem("senders-x-session")!;
+  const sessionId = sessionStorage.getItem("SafeFiles-x-session")!;
   htmx.ajax("GET", "/session/connect/" + sessionId + "/", {
     target: "#main-container",
     swap: "outerHTML",
@@ -139,8 +137,9 @@ peerEmitter.addEventListener(PeerEvent.FILE_UPDATE, (event) => {
 
   if (progress === 100) {
     const icon = fileDiv.querySelector(".transfer-icon");
-    icon!.innerHTML = '<i data-lucide="check" class="size-7"></i>';
-    lucide.createIcons();
+    icon!.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-7">
+      <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+    </svg>`;
   }
 });
 

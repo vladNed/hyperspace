@@ -32,7 +32,7 @@ export class WSConnect {
     this.client.onerror = (event: Event) => {
       handleDisplayStatusChange("Server Down");
       handleSessionResponseError(
-        "Cannot create a new senders session due to a server error",
+        "Cannot create a new SafeFiles session due to a server error",
       );
     };
 
@@ -61,7 +61,7 @@ export class WSConnect {
             offerDataMsg.type == "error" &&
             (offerDataMsg.payload as Response).message
           ) {
-            handleDisplayStatusChange("Senders");
+            handleDisplayStatusChange("SafeFiles");
             handleSessionResponseError(
               (offerDataMsg.payload as Response).message,
             );

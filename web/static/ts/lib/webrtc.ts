@@ -270,7 +270,7 @@ export class WebRTCPeer {
       this.state !== PeerState.SENDING &&
       this.state !== PeerState.RECEIVING
     ) {
-      console.error("Peer not in correct state", this.state);
+      console.log("removing from ", this.state);
       return;
     }
 
@@ -284,6 +284,16 @@ export class WebRTCPeer {
     await this.sendCancel();
     handleRemoveFileDiv(fileId);
     this.resetPeer();
+  }
+
+  async checkCancelSignal(payload: ArrayBuffer): Promise<boolean> {
+    if (payload.byteLength === 1 && new Uint8Array(payload)[0] === 0xff) {
+      handleDisplayFileStatus(this.transferSession!.fileId, FileStatus.CANCEL);
+      this.resetPeer();
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -306,12 +316,18 @@ export class WebRTCPeer {
       [
         PeerState.RECEIVING,
         async () => {
+          if (await this.checkCancelSignal(eventData)) {
+            return;
+          }
           await this.handlePayloadMessage(eventData);
         },
       ],
       [
         PeerState.SENDING,
         async () => {
+          if (await this.checkCancelSignal(eventData)) {
+            return;
+          }
           const peerMessage = await this.decodeMessage(eventData);
           if (peerMessage.type === PeerMessageType.OK) {
             await this.handleOkMessage();
@@ -428,13 +444,9 @@ export class WebRTCPeer {
    * @param payload A chunk of a file
    */
   private async handlePayloadMessage(payload: ArrayBuffer): Promise<void> {
+    if (!this.transferSession) return;
     if (payload.byteLength === 0) {
       this.handleEOF();
-      return;
-    }
-    if (payload.byteLength === 1 && new Uint8Array(payload)[0] === 0xff) {
-      handleDisplayFileStatus(this.transferSession!.fileId, FileStatus.CANCEL);
-      this.resetPeer();
       return;
     }
     const decryptedPayload = await this.identity.decrypt(payload);
@@ -460,6 +472,7 @@ export class WebRTCPeer {
    * received the chunk and is ready for the next chunk.
    */
   private async handleOkMessage(): Promise<void> {
+    if (!this.transferSession) return;
     const { dataSent, metadata, file, fileId } = this.transferSession!;
     if (dataSent === metadata.fileSize) {
       this.completeTransfer();

@@ -4,12 +4,12 @@
     >
         <div class="flex justify-center gap-4 text-4xl font-extrabold">
             <span>[*</span>
-            <div>Senders</div>
+            <div>SafeFiles</div>
             <span>*]</span>
         </div>
         <div class="error-text" id="error-box" hidden="true"></div>
         <div class="delimiter"></div>
-        <div class="w-full">
+        <div class="w-full gap-2 flex flex-col">
             <div class="flex gap-4">
                 <div class="text-neutral-500">Session ID:</div>
                 <div>{{ .sessionId }}</div>
@@ -18,11 +18,51 @@
                 <div class="text-neutral-500">Status:</div>
                 <div id="status">Connected</div>
             </div>
+            <button
+                id="exit-session"
+                type="button"
+                class="exit-button"
+                onclick="window.location = '/'"
+            >
+                Exit Session
+            </button>
         </div>
         <div class="drag-drop-container" id="drag-drop-zone">
-            <div>Drag & drop file to transfer</div>
             <div>
-                <img src="/static/icons/package.svg" alt="package" />
+                Drop or
+                <label
+                    for="select-file-input"
+                    class="text-emerald-500 underline cursor-pointer"
+                >
+                    select file
+                </label>
+                <input
+                    type="file"
+                    id="select-file-input"
+                    style="display: none"
+                />
+                to transfer
+            </div>
+            <div>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="lucide lucide-package-icon lucide-package"
+                >
+                    <path
+                        d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"
+                    />
+                    <path d="M12 22V12" />
+                    <polyline points="3.29 7 12 12 20.71 7" />
+                    <path d="m7.5 4.27 9 5.15" />
+                </svg>
             </div>
         </div>
         <div class="delimiter"></div>

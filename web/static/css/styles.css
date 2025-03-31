@@ -18,7 +18,7 @@
 
 html,
 body {
-    @apply bg-white text-black dark:bg-black dark:text-neutral-100 transition-all duration-200 ease-in-out;
+    @apply bg-white text-black dark:bg-black dark:text-neutral-100 transition-all duration-200 ease-in-out overflow-hidden;
     font-family: inherit;
 }
 
@@ -59,7 +59,7 @@ body {
 /* Drag & Drop container */
 
 .drag-drop-container {
-    @apply h-96 w-full border-2 border-dashed border-neutral-400 rounded-2xl bg-neutral-100 flex items-center justify-center;
+    @apply h-[40rem] w-full border-2 border-dashed border-neutral-400 rounded-2xl bg-neutral-100 flex items-center justify-center;
     @apply text-neutral-400 dark:text-neutral-700 trans flex-col gap-2;
     @apply dark:border-neutral-700 dark:bg-neutral-950;
 }
@@ -124,6 +124,14 @@ div.file-container {
 input.pin-input {
     @apply w-16 h-20 text-center text-3xl font-bold border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500;
     @apply dark:border-gray-700 dark:focus:ring-emerald-400 dark:bg-neutral-800;
+}
+
+/* END */
+
+/* Exit button */
+
+.exit-button {
+    @apply py-1 px-4 hover:bg-emerald-500 hover:text-white trans rounded-lg border hover:border-emerald-500;
 }
 
 .app-input-container {

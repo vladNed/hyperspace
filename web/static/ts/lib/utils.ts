@@ -113,9 +113,11 @@ export function addFileDiv(id: string, name: string, size: number): void {
                 <p class="text-gray-500 dark:text-gray-400">${formatedFileSize}</p>
             </div>
             <div id="${id}-status" class="file-status">Processing file</div>
-            <div>
-                <button type="button" class="close-button" onclick="cancelFileTransfer('${id}')">
-                    <i data-lucide="x" class="size-4"></i>
+            <div id="close-button-body">
+                <button type="button" class="close-button" id="close-button" onclick="cancelFileTransfer('${id}')">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
                 </button>
             </div>
         </div>
@@ -124,13 +126,19 @@ export function addFileDiv(id: string, name: string, size: number): void {
                 <div class="progress" style="width: 0%">0%</div>
             </div>
             <div class="transfer-icon">
-              <i data-lucide="loader" class="size-7 animate-spin"></i>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-loader-icon lucide-loader animate-spin">
+                <path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/>
+                <path d="M18 12h4"/>
+                <path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/>
+                <path d="m4.9 19.1 2.9-2.9"/>
+                <path d="M2 12h4"/>
+                <path d="m4.9 4.9 2.9 2.9"/>
+              </svg>
             </div>
         </div>
     </div>
     `;
   fileContainer.appendChild(fileDiv);
-  lucide.createIcons();
 }
 
 /**
@@ -152,12 +160,13 @@ export function addDownloadLink(fileId: string, file: Blob, fileName: string) {
   const link = document.createElement("a");
   link.classList.add("transfer-icon");
   link.title = "Download file";
-  link.innerHTML = '<i data-lucide="download" class="size-7"></i>';
+  link.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-7">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+  </svg>`;
   link.href = url;
   link.download = fileName;
   newContainer.appendChild(link);
 
   const lowBarParent = fileDiv.querySelector(".low-bar")!;
   lowBarParent.replaceChild(newContainer, iconDiv);
-  lucide.createIcons();
 }

@@ -60,7 +60,7 @@ if (continueButton) {
       return;
     }
 
-    const sessionId = sessionStorage.getItem("senders-x-session")!;
+    const sessionId = sessionStorage.getItem("SafeFiles-x-session")!;
     signallingEmitter.dispatchPeerEvent<{ pin: string; sessionId: string }>(
       SignalingEvent.REQUEST_ANSWER_WITH_PIN,
       {

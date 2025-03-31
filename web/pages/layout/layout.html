@@ -23,9 +23,6 @@
         <!-- HTMX -->
         <script src="/static/htmx/htmx.min.js" defer></script>
         <script src="/static/htmx/response-target.min.js" defer></script>
-
-        <!-- Lucide Icons -->
-        <script src="https://unpkg.com/lucide@latest"></script>
     </head>
     <body hx-ext="response-targets" class="">
         <div class="main-container" id="main-container">
@@ -34,7 +31,6 @@
     </body>
     <script src="/static/js/index.js" type="module"></script>
     <script>
-        lucide.createIcons();
         window.SERVER_CONFIG = {
             WS_URL: "{{ .wsURL }}",
         };
