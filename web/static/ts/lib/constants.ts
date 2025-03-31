@@ -22,6 +22,7 @@ export enum PeerState {
   CONNECTED,
   RECEIVING,
   SENDING,
+  CANCEL,
 }
 
 export enum PeerEvent {
@@ -34,6 +35,7 @@ export enum PeerEvent {
   FILE_UPDATE = "fileUpdate",
   TRANSFER_INITIATED = "transferInitiated",
   PEER_STATUS_CHANGED = "peerStatusChanged",
+  CANCEL_TRANSFER = "cancelTransfer",
 }
 
 export enum SignalingEvent {
@@ -46,10 +48,12 @@ export enum SignalingEvent {
 }
 
 export enum FileStatus {
-  PROCESSING = "Processing",
+  PROCESSING = "Waiting to transfer",
   TRANSFERRING = "Transferring",
-  DONE = "Done",
+  DONE = "Ready to download",
+  SENT = "Sent",
   FAILED = "Failed",
+  CANCEL = "Cancelled by peer",
 }
 
 export enum SignalingState {
@@ -65,6 +69,7 @@ export enum PeerMessageType {
   INIT = 0,
   PAYLOAD = 1,
   DONE = 2,
+  CANCEL = 3,
   OK = 200,
   ERROR = 400,
 }

@@ -27,6 +27,20 @@ export async function getFileID(): Promise<string> {
   return hashHex;
 }
 
+function formatFileSize(bytes: number): string {
+  console.log(bytes);
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let size = bytes;
+  let unitIndex = 0;
+
+  while (size >= 1000 && unitIndex < units.length - 1) {
+    size /= 1000;
+    unitIndex++;
+  }
+
+  return `${Math.round(size * 10) / 10} ${units[unitIndex]}`;
+}
+
 function arrayBufferToHex(buffer: ArrayBuffer): string {
   const uint8Array = new Uint8Array(buffer);
   return Array.from(uint8Array)
@@ -81,62 +95,40 @@ export async function preProcessFile(
   return metadata;
 }
 
-export function addFileDiv(
-  fileId: string,
-  fileName: string,
-  isDownload: boolean,
-): void {
+export function addFileDiv(id: string, name: string, size: number): void {
   const fileContainer = document.getElementById("file-container");
   if (fileContainer === null) {
     throw new Error("File container not found");
   }
+
+  const formatedFileSize = formatFileSize(size);
   const fileDiv = document.createElement("div");
-  fileDiv.id = fileId;
+  fileDiv.id = id;
   fileDiv.classList.add("transfer-file");
-
-  // Metadata div holds file name, status, and progress bar
-  const metadataDiv = document.createElement("div");
-  metadataDiv.classList.add("metadata");
-
-  // Title and status div
-  const topDiv = document.createElement("div");
-  topDiv.classList.add("flex", "gap-4");
-
-  // Name element
-  const titleDiv = document.createElement("p");
-  titleDiv.textContent = fileName;
-
-  // Status element
-  const titleStatus = document.createElement("p");
-  titleStatus.classList.add("text-neutral-500");
-  titleStatus.id = fileId + "-status";
-  titleStatus.textContent = "Processing";
-  topDiv.appendChild(titleDiv);
-  topDiv.appendChild(titleStatus);
-
-  metadataDiv.appendChild(topDiv);
-
-  const progressDiv = document.createElement("div");
-  progressDiv.classList.add("progress-top");
-  const progressBar = document.createElement("div");
-  progressBar.classList.add("progress");
-  progressBar.innerText = "0%";
-  progressBar.style.width = "0%";
-  progressDiv.appendChild(progressBar);
-  metadataDiv.appendChild(progressDiv);
-
-  const iconDiv = document.createElement("div");
-  iconDiv.classList.add("transfer-icon");
-  if (isDownload) {
-    iconDiv.innerHTML =
-      '<i data-lucide="cloud-download" class="size-6 animate-pulse"></i>';
-  } else {
-    iconDiv.innerHTML =
-      '<i data-lucide="cloud-upload" class="size-6 animate-pulse"></i>';
-  }
-
-  fileDiv.appendChild(metadataDiv);
-  fileDiv.appendChild(iconDiv);
+  fileDiv.innerHTML = `
+    <div class="content-body">
+        <div class="metadata">
+            <div class="file-info">
+                <p class="font-semibold text-ellipsis">${name}</p>
+                <p class="text-gray-500 dark:text-gray-400">${formatedFileSize}</p>
+            </div>
+            <div id="${id}-status" class="file-status">Processing file</div>
+            <div>
+                <button type="button" class="close-button" onclick="cancelFileTransfer('${id}')">
+                    <i data-lucide="x" class="size-4"></i>
+                </button>
+            </div>
+        </div>
+        <div class="low-bar">
+            <div class="progress-top">
+                <div class="progress" style="width: 0%">0%</div>
+            </div>
+            <div class="transfer-icon">
+              <i data-lucide="loader" class="size-7 animate-spin"></i>
+            </div>
+        </div>
+    </div>
+    `;
   fileContainer.appendChild(fileDiv);
   lucide.createIcons();
 }
@@ -160,11 +152,12 @@ export function addDownloadLink(fileId: string, file: Blob, fileName: string) {
   const link = document.createElement("a");
   link.classList.add("transfer-icon");
   link.title = "Download file";
-  link.innerHTML = '<i data-lucide="download" class="size-6"></i>';
+  link.innerHTML = '<i data-lucide="download" class="size-7"></i>';
   link.href = url;
   link.download = fileName;
   newContainer.appendChild(link);
 
-  fileDiv.replaceChild(newContainer, iconDiv);
+  const lowBarParent = fileDiv.querySelector(".low-bar")!;
+  lowBarParent.replaceChild(newContainer, iconDiv);
   lucide.createIcons();
 }

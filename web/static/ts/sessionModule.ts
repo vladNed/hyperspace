@@ -31,3 +31,9 @@ dropZone.addEventListener("drop", async (event) => {
     file,
   });
 });
+
+export function cancelFileTransfer(id: string) {
+  peerEmitter.dispatchPeerEvent(PeerEvent.CANCEL_TRANSFER, { fileId: id });
+}
+
+(window as any).cancelFileTransfer = cancelFileTransfer;

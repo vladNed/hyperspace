@@ -73,6 +73,7 @@ export interface InitTransferMessage {
 export interface ReceiveTransferMessage {
   fileId: string;
   fileName: string;
+  fileSize: number;
 }
 
 export interface FileUpdateEvent {
@@ -82,3 +83,7 @@ export interface FileUpdateEvent {
 }
 
 export interface ConnectionConfirmEvent {}
+
+export interface CancelTransferEvent {
+  fileId: string;
+}

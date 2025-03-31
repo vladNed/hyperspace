@@ -1,5 +1,6 @@
-import { FileStatus } from "./constants.js";
-import { WebRTCPeer } from "./webrtc.js";
+import { FileStatus, PeerEvent } from "./constants.js";
+import { CancelTransferEvent } from "./types.js";
+import { WebRTCPeer, peerEmitter } from "./webrtc.js";
 
 export async function handleCreateOffer(localPeer: WebRTCPeer): Promise<void> {
   const errorContainer = document.getElementById("error-box");
@@ -26,25 +27,48 @@ export function handleDisplayStatusChange(message: string): void {
 export function handleFailedFileTransfer(fileId: string): void {
   const fileDiv = document.getElementById(fileId) as HTMLDivElement;
   const progressBar = fileDiv.querySelector(
-    ".metadata  .progress-top  .progress",
+    ".content-body .low-bar  .progress-top  .progress",
   ) as HTMLDivElement;
   progressBar.innerText = "0%";
   progressBar.style.width = "0%";
   const icon = fileDiv.querySelector(".transfer-icon");
   icon!.innerHTML =
-    ' <i data-lucide="cloud-alert" class="size-6 text-red-500"></i>';
+    ' <i data-lucide="cloud-alert" class="size-7 text-red-500"></i>';
   handleDisplayFileStatus(fileId, FileStatus.FAILED);
   lucide.createIcons();
+}
+
+export function handleRemoveFileDiv(fileId: string): void {
+  const fileDiv = document.getElementById(fileId);
+  if (fileDiv) {
+    fileDiv.remove();
+  }
 }
 
 export function handleDisplayFileStatus(
   fileId: string,
   status: FileStatus,
+  receiving: boolean = false,
 ): void {
   const statusElement = document.getElementById(fileId + "-status");
-  if (statusElement) {
-    statusElement.textContent = status.valueOf();
+  if (!statusElement) {
+    throw new Error("Status element not found");
   }
+  statusElement.textContent = status.valueOf();
+  const fileDiv = document.getElementById(fileId) as HTMLDivElement;
+  const iconDiv = fileDiv.querySelector(
+    ".content-body .low-bar .transfer-icon",
+  );
+  if (status !== FileStatus.TRANSFERRING) return;
+  if (receiving) {
+    iconDiv!.innerHTML =
+      '<i data-lucide="cloud-download" class="size-7 animate-pulse"></i>';
+  } else {
+    iconDiv!.innerHTML =
+      '<i data-lucide="cloud-upload" class="size-7 animate-pulse"></i>';
+  }
+
+  lucide.createIcons();
 }
 
 export async function handleSaveToDisk(
@@ -78,6 +102,13 @@ export async function handleSaveToDisk(
 
     request.onerror = (e) => reject(e);
   });
+}
+
+export async function handleCancelFile(fileId: string) {
+  peerEmitter.dispatchPeerEvent<CancelTransferEvent>(
+    PeerEvent.CANCEL_TRANSFER,
+    { fileId },
+  );
 }
 
 export async function handleRetrieveFromDisk(fileId: string): Promise<Blob[]> {

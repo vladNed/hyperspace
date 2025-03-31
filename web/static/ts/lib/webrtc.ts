@@ -12,6 +12,7 @@ import {
   handleClearDb,
   handleDisplayFileStatus,
   handleFailedFileTransfer,
+  handleRemoveFileDiv,
   handleRetrieveFromDisk,
   handleSaveToDisk,
 } from "./handlers.js";
@@ -264,6 +265,27 @@ export class WebRTCPeer {
     }
   }
 
+  public async cancelTransfer(cancelledFileId: string): Promise<void> {
+    if (
+      this.state !== PeerState.SENDING &&
+      this.state !== PeerState.RECEIVING
+    ) {
+      console.error("Peer not in correct state", this.state);
+      return;
+    }
+
+    this.state = PeerState.CANCEL;
+    const { fileId } = this.transferSession!;
+    if (fileId !== cancelledFileId) {
+      console.error("File cannot be cancelled", fileId, cancelledFileId);
+      return;
+    }
+
+    await this.sendCancel();
+    handleRemoveFileDiv(fileId);
+    this.resetPeer();
+  }
+
   /**
    * Main handler for onmessage events from the data channel. The handler
    * will switch between the different states of the peer to handle the
@@ -300,6 +322,7 @@ export class WebRTCPeer {
           this.resetPeer();
         },
       ],
+      [PeerState.CANCEL, async () => {}],
     ]);
 
     const handler = handlers.get(this.state);
@@ -350,7 +373,7 @@ export class WebRTCPeer {
   }
 
   private completeTransfer(): void {
-    handleDisplayFileStatus(this.transferSession!.fileId, FileStatus.DONE);
+    handleDisplayFileStatus(this.transferSession!.fileId, FileStatus.SENT);
     const eof = new ArrayBuffer(0);
     this.dataChannel!.send(eof);
     this.state = PeerState.CONNECTED;
@@ -365,6 +388,11 @@ export class WebRTCPeer {
   private async sendErr(): Promise<void> {
     let errMessage: PeerMessage = { type: PeerMessageType.ERROR };
     await this.send(JSON.stringify(errMessage));
+  }
+
+  private async sendCancel(): Promise<void> {
+    const eof = new Uint8Array([0xff]).buffer;
+    this.dataChannel!.send(eof);
   }
 
   /**
@@ -388,8 +416,10 @@ export class WebRTCPeer {
       {
         fileId,
         fileName: payload.fileName,
+        fileSize: payload.fileSize,
       },
     );
+    handleDisplayFileStatus(fileId, FileStatus.TRANSFERRING, true);
   }
 
   /**
@@ -402,9 +432,13 @@ export class WebRTCPeer {
       this.handleEOF();
       return;
     }
+    if (payload.byteLength === 1 && new Uint8Array(payload)[0] === 0xff) {
+      handleDisplayFileStatus(this.transferSession!.fileId, FileStatus.CANCEL);
+      this.resetPeer();
+      return;
+    }
     const decryptedPayload = await this.identity.decrypt(payload);
     const { chunksIndex, metadata, fileId } = this.transferSession!;
-    handleDisplayFileStatus(fileId, FileStatus.TRANSFERRING);
     peerEmitter.dispatchPeerEvent<FileUpdateEvent>(PeerEvent.FILE_UPDATE, {
       fileId,
       currentData: Math.min(
@@ -431,7 +465,9 @@ export class WebRTCPeer {
       this.completeTransfer();
       return;
     }
-    handleDisplayFileStatus(fileId, FileStatus.TRANSFERRING);
+    if (dataSent === 0) {
+      handleDisplayFileStatus(fileId, FileStatus.TRANSFERRING);
+    }
     const nextChunkEnd = Math.min(
       dataSent! + this.currentChunkSize,
       metadata.fileSize,

@@ -81,8 +81,23 @@ div.file-container {
     @apply w-full  flex gap-2 p-4 rounded-xl bg-neutral-100 dark:bg-neutral-800 justify-between items-center;
 }
 
-.transfer-file > .metadata {
+.transfer-file > .content-body {
     @apply w-full flex h-full flex-col gap-2;
+}
+.metadata {
+    @apply w-full flex flex-row justify-between overflow-hidden gap-2;
+}
+
+.metadata > .file-info {
+    @apply flex text-sm gap-2 flex-col overflow-hidden h-full w-full;
+}
+
+.metadata .file-status {
+    @apply px-4 whitespace-nowrap text-gray-500 dark:text-gray-400;
+}
+
+.low-bar {
+    @apply flex items-center gap-4;
 }
 
 .transfer-file > div.transfer-icon {
@@ -90,15 +105,15 @@ div.file-container {
 }
 
 .transfer-file a.transfer-icon {
-    @apply flex items-center justify-center p-2  rounded-full border border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400;
+    @apply flex items-center justify-center border border-emerald-500 rounded-lg p-[5px] text-emerald-600 dark:border-emerald-400 dark:text-emerald-400;
     @apply hover:bg-emerald-500 hover:text-black trans hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-black;
     @apply active:bg-emerald-600 active:text-black active:-translate-y-0.5 active:shadow-lg active:shadow-black;
 }
 
-.transfer-file > div.metadata > div.progress-top {
-    @apply w-full bg-gray-200 rounded-full dark:bg-gray-700 trans;
+.transfer-file div.progress-top {
+    @apply w-full bg-emerald-700/30 rounded-full dark:bg-emerald-400/30 trans;
 }
-.transfer-file > div.metadata > div.progress-top > div.progress {
+.transfer-file div.progress {
     @apply bg-emerald-600 text-xs font-medium text-emerald-100 text-center p-0.5 leading-none rounded-full trans;
 }
 
@@ -139,8 +154,12 @@ input.pin-input {
     @apply bg-gradient-to-r from-emerald-600 to-green-600 -translate-y-1 shadow-lg dark:shadow-black;
 }
 
+.close-button {
+    @apply hover:bg-red-400 hover:text-red-800 trans rounded-md p-1;
+}
+
 .trans {
-    @apply transition-all duration-500 ease-in-out;
+    @apply transition-all duration-300 ease-in-out;
 }
 
 .error-text {

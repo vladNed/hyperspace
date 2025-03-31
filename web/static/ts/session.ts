@@ -5,6 +5,7 @@ import {
   handleDisplayStatusChange,
 } from "./lib/handlers.js";
 import type {
+  CancelTransferEvent,
   FileUpdateEvent,
   InitTransferMessage,
   PinReceivedEvent,
@@ -66,6 +67,14 @@ if (startBtn !== null) {
   });
 }
 
+peerEmitter.addEventListener(
+  PeerEvent.CANCEL_TRANSFER,
+  async (event: Event) => {
+    const { detail } = event as CustomEvent<CancelTransferEvent>;
+    localPeer!.cancelTransfer(detail.fileId);
+  },
+);
+
 peerEmitter.addEventListener(PeerEvent.OFFER_CREATED, async (event: Event) => {
   const { detail } = event as CustomEvent<SDPEventMessage>;
   const sessionIdInput = document.getElementById(
@@ -112,7 +121,7 @@ peerEmitter.addEventListener(PeerEvent.INIT_TRANSFER, async (event) => {
   }
   const { detail } = event as CustomEvent<InitTransferMessage>;
   const fileId = await getFileID();
-  addFileDiv(fileId, detail.file.name, false);
+  addFileDiv(fileId, detail.file.name, detail.file.size);
   localPeer!.initTransfer(detail.file, fileId);
 });
 
@@ -121,7 +130,7 @@ peerEmitter.addEventListener(PeerEvent.FILE_UPDATE, (event) => {
   const { currentData, totalData, fileId } = eventMessage.detail;
   const fileDiv = document.getElementById(fileId) as HTMLDivElement;
   const progressBar = fileDiv.querySelector(
-    ".metadata  .progress-top  .progress",
+    ".content-body .low-bar  .progress-top  .progress",
   ) as HTMLDivElement;
 
   const progress = Math.round((currentData / totalData) * 100);
@@ -130,7 +139,7 @@ peerEmitter.addEventListener(PeerEvent.FILE_UPDATE, (event) => {
 
   if (progress === 100) {
     const icon = fileDiv.querySelector(".transfer-icon");
-    icon!.innerHTML = '<i data-lucide="check" class="size-6"></i>';
+    icon!.innerHTML = '<i data-lucide="check" class="size-7"></i>';
     lucide.createIcons();
   }
 });
@@ -141,8 +150,8 @@ peerEmitter.addEventListener(PeerEvent.CONNECTION_STATUS_CHANGED, () => {
 
 peerEmitter.addEventListener(PeerEvent.TRANSFER_INITIATED, (event) => {
   const customEvent = event as CustomEvent<ReceiveTransferMessage>;
-  const { fileName, fileId } = customEvent.detail;
-  addFileDiv(fileId, fileName, true);
+  const { fileName, fileId, fileSize } = customEvent.detail;
+  addFileDiv(fileId, fileName, fileSize);
 });
 
 signallingEmitter.addEventListener(
