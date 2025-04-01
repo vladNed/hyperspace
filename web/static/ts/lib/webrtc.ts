@@ -57,34 +57,36 @@ export class WebRTCPeer {
       this.setAnswererDataChannel();
     }
 
-    this.peerConnection.onicecandidate = (
-      event: RTCPeerConnectionIceEventInit,
+    this.peerConnection.onicecandidateerror = (
+      event: RTCPeerConnectionIceErrorEvent,
     ) => {
-      if (!event) return;
-      if (this.peerConnection.iceGatheringState === "complete") {
-        switch (this.state) {
-          case PeerState.OFFER_CREATED:
-            peerEmitter.dispatchPeerEvent<SDPEventMessage>(
-              PeerEvent.OFFER_CREATED,
-              {
-                sdp: this.peerConnection.localDescription!,
-              },
-            );
-            this.state = PeerState.OFFER_SET;
-            break;
-          case PeerState.OFFER_ACCEPTED:
-            peerEmitter.dispatchPeerEvent<SDPEventMessage>(
-              PeerEvent.OFFER_ACCEPTED,
-              {
-                sdp: this.peerConnection.localDescription!,
-              },
-            );
-            this.state = PeerState.ANSWER_CREATED;
-            break;
-          default:
-            console.error("ICE ERROR: Unknown state", this.state);
-            break;
-        }
+      console.error("ICE ERROR:", event);
+    };
+
+    this.peerConnection.onicegatheringstatechange = (event: Event) => {
+      if (this.peerConnection.iceGatheringState !== "complete") return;
+      switch (this.state) {
+        case PeerState.OFFER_CREATED:
+          peerEmitter.dispatchPeerEvent<SDPEventMessage>(
+            PeerEvent.OFFER_CREATED,
+            {
+              sdp: this.peerConnection.localDescription!,
+            },
+          );
+          this.state = PeerState.OFFER_SET;
+          break;
+        case PeerState.OFFER_ACCEPTED:
+          peerEmitter.dispatchPeerEvent<SDPEventMessage>(
+            PeerEvent.OFFER_ACCEPTED,
+            {
+              sdp: this.peerConnection.localDescription!,
+            },
+          );
+          this.state = PeerState.ANSWER_CREATED;
+          break;
+        default:
+          console.error("ICE ERROR: Unknown state", this.state);
+          break;
       }
     };
 
@@ -189,7 +191,11 @@ export class WebRTCPeer {
 
   public async createOffer(): Promise<void> {
     try {
-      const offer = await this.peerConnection.createOffer();
+      const offer = await this.peerConnection.createOffer({
+        iceRestart: true,
+        offerToReceiveAudio: false,
+        offerToReceiveVideo: false,
+      });
       await this.peerConnection.setLocalDescription(offer);
       this.state = PeerState.OFFER_CREATED;
     } catch (error) {
