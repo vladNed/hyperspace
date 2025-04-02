@@ -5,11 +5,16 @@
     class="flex flex-col gap-5 w-full items-center m-auto"
 >
     <div class="flex justify-center gap-4 text-4xl font-extrabold">
-        <span>[*</span>
-        <p>{{ .title }}</p>
-        <span>*]</span>
+        <div class="size-12">
+            <img src="/static/images/logo.png" alt="SF" />
+        </div>
+        <div class="flex items-center">
+            <p>SafeFiles</p>
+        </div>
     </div>
-    <p>The private space to share documents</p>
+    <p>
+        Secure, private, and unlimited file transfers directly in your browser
+    </p>
     <div class="action-selector">
         <button onclick="window.location = '/session/start'">
             Start Session

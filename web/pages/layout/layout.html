@@ -3,9 +3,25 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{{ .title }}</title>
         <meta name="description" content="{{ .description }}" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="canonical" href="https://use.safefiles.app" />
+        <link rel="icon" href="/static/images/favicon.ico" size="32x32" />
+        <link
+            rel="icon"
+            href="/static/images/favicon.svg"
+            type="image/svg+xml"
+        />
+        <link
+            rel="apple-touch-icon"
+            href="/static/images/apple-touch-icon.png"
+        />
+        <meta property="og:title" content="SafeFiles" />
+        <meta property="og:description" content="{{ .description }}" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://use.safefiles.app" />
+        <meta property="og:image" content="/static/images/safefiles-og.png" />
 
         <!-- Inter font CDN -->
         <link rel="preconnect" href="https://rsms.me/" />
@@ -23,6 +39,9 @@
         <!-- HTMX -->
         <script src="/static/htmx/htmx.min.js" defer></script>
         <script src="/static/htmx/response-target.min.js" defer></script>
+
+        <!-- Preload images -->
+        <link rel="preload" href="/static/images/logo.png" as="image" />
     </head>
     <body hx-ext="response-targets" class="">
         <div class="main-container" id="main-container">

@@ -1,8 +1,12 @@
-# HyperSpace
+<p align="center">
+    <img class="logo" width="100" height="105" src="https://safefiles.app/logo-main.png"/>
+</p>
 
-HyperSpace is a WebRTC infused file sharing platform that allows users to share files with each other in real-time.
-The traffic and all exchange is secure via E2EE (End-to-End Encryption) using ECDH (Elliptic Curve Diffie-Hellman)
-key exchange.
+<h1 align="center">SafeFiles</h1>
+<p align="center" >A WeTransfer alternative that's simple & privacy first</p>
+
+SafeFiles is a WebRTC infused file sharing platform that allows users to share files with each other in real-time.
+The traffic and all exchange is secure once via E2EE (End-to-End Encryption) using ECDH (Elliptic Curve Diffie-Hellman) key exchange, and then using the DTLS protocol provided by WebRTC for the data channel.
 
 The project is built to be a simple, secure and efficient way to share files with others without the need to upload
 them to a server. It features no overhead and bloating libraries in JavaScript, and its built using mainly TypeScript

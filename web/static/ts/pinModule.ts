@@ -6,20 +6,28 @@ const inputs = document.getElementsByClassName(
 ) as HTMLCollectionOf<HTMLInputElement>;
 Array.from(inputs).forEach((input) => {
   input.addEventListener("input", (event) => {
+    const target = event.target! as HTMLInputElement;
     const id = parseInt(input.id.split("input")[1]);
+    const isNumber = /^[0-9]$/.test(target.value);
+    if (!isNumber) {
+      target.value = "";
+      return;
+    }
     document.getElementById(`input${id + 1}`)?.focus();
   });
 });
 
 document.addEventListener("keydown", function (e) {
-  if (e.key !== "Backspace") return;
-  const activeElement = document.activeElement! as HTMLInputElement;
-  if (activeElement.tagName.toLowerCase() !== "input") return;
-  const id = parseInt(activeElement.id.split("input")[1]);
-  if (id > 1) {
-    document.getElementById(`input${id - 1}`)?.focus();
+  if (e.key === "Backspace") {
+    const activeElement = document.activeElement! as HTMLInputElement;
+    if (activeElement.tagName.toLowerCase() === "input") {
+      const id = parseInt(activeElement.id.split("input")[1]);
+      if (id > 1) {
+        document.getElementById(`input${id - 1}`)?.focus();
+      }
+      activeElement.value = "";
+    }
   }
-  activeElement.value = "";
 });
 
 document.addEventListener("paste", (e) => {

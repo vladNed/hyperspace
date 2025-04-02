@@ -20,7 +20,7 @@ func indexHandler(c *gin.Context) {
 	c.Header("Content-Type", "text/html")
 	c.Header("X-Cache", "HIT")
 	c.HTML(http.StatusOK, "index.html", gin.H{
-		"title":       "SafeFiles",
+		"title":       "SafeFiles | App",
 		"description": "SafeFiles is p2p secure file sharing application",
 		"sessionId":   utils.GetSessionId(),
 	})
@@ -47,7 +47,7 @@ func connectHandler(c *gin.Context) {
 			}
 		}
 		c.HTML(http.StatusOK, "session-start.html", gin.H{
-			"title":       "SafeFiles",
+			"title":       "SafeFiles | App",
 			"description": "SafeFiles is p2p secure file sharing application",
 			"sessionId":   sessionId,
 			"wsURL":       settings.WSOrigin + "/ws/v1/session/",
@@ -55,7 +55,7 @@ func connectHandler(c *gin.Context) {
 		break
 	case JoinAction:
 		c.HTML(http.StatusOK, "session-join.html", gin.H{
-			"title":       "SafeFiles",
+			"title":       "SafeFiles | App",
 			"description": "SafeFiles is p2p secure file sharing application",
 			"wsURL":       settings.WSOrigin + "/ws/v1/session/",
 		})
