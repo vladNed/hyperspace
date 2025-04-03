@@ -4,6 +4,7 @@ import (
 	brotli "github.com/anargu/gin-brotli"
 	"github.com/gin-gonic/gin"
 	"github.com/vladNed/hyperspace/internal/hub"
+	"github.com/vladNed/hyperspace/internal/settings"
 )
 
 type Server struct {
@@ -11,6 +12,7 @@ type Server struct {
 }
 
 func NewServer() *Server {
+	gin.SetMode(gin.ReleaseMode)
 	return &Server{
 		engine: gin.Default(),
 	}
@@ -32,6 +34,9 @@ func (s *Server) RegisterRoutes() {
 
 func (s *Server) Run() {
 	s.engine.Static("/static", "./web/static")
+	s.engine.Static("/public", "./web/public")
+	s.engine.StaticFile("/sitemap.xml", "./web/public/sitemap.xml")
+	s.engine.StaticFile("/robots.txt", "./web/public/robots.txt")
 	s.engine.LoadHTMLGlob("./web/pages/**/*")
 
 	s.engine.Use(brotli.Brotli(brotli.DefaultCompression))
@@ -42,5 +47,11 @@ func (s *Server) Run() {
 	hub := hub.GetInstance()
 	go hub.Run()
 
+	config := settings.GetInstance()
+	if config.Env == "prod" {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
 	s.engine.Run()
 }

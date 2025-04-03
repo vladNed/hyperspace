@@ -7,21 +7,15 @@
         <title>{{ .title }}</title>
         <meta name="description" content="{{ .description }}" />
         <link rel="canonical" href="https://use.safefiles.app" />
-        <link rel="icon" href="/static/images/favicon.ico" size="32x32" />
-        <link
-            rel="icon"
-            href="/static/images/favicon.svg"
-            type="image/svg+xml"
-        />
-        <link
-            rel="apple-touch-icon"
-            href="/static/images/apple-touch-icon.png"
-        />
+        <link rel="icon" href="/public/favicon.ico" size="32x32" />
+        <link rel="icon" href="/public/favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/public/apple-touch-icon.png" />
         <meta property="og:title" content="SafeFiles" />
         <meta property="og:description" content="{{ .description }}" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://use.safefiles.app" />
-        <meta property="og:image" content="/static/images/safefiles-og.png" />
+        <meta property="og:image" content="/public/safefiles-og.png" />
+        <meta property="og:site_name" content="SafeFiles App" />
 
         <!-- Inter font CDN -->
         <link rel="preconnect" href="https://rsms.me/" />
@@ -41,7 +35,7 @@
         <script src="/static/htmx/response-target.min.js" defer></script>
 
         <!-- Preload images -->
-        <link rel="preload" href="/static/images/logo.png" as="image" />
+        <link rel="preload" href="/public/logo.png" as="image" />
     </head>
     <body hx-ext="response-targets" class="">
         <div class="main-container" id="main-container">
