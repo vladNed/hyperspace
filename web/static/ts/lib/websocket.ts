@@ -44,7 +44,7 @@ export class WSConnect {
             handleSessionResponseError(message.payload.message);
           } else if (message.type == "ok") {
             this.state = SignalingState.WAITING_FOR_CONNECTION;
-            handleDisplayStatusChange("Waiting for others to join");
+            handleDisplayStatusChange("Waiting for connection");
           }
           break;
         case SignalingState.WAITING_FOR_CONNECTION:

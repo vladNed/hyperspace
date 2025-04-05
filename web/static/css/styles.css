@@ -18,14 +18,22 @@
 
 html,
 body {
-    @apply bg-white text-black dark:bg-black dark:text-neutral-100 transition-all duration-200 ease-in-out overflow-hidden;
+    @apply bg-white text-black dark:bg-black dark:text-neutral-100 transition-all duration-200 ease-in-out overflow-hidden h-[100vh] flex flex-col;
     font-family: inherit;
 }
 
 /* Layout */
 
 .main-container {
-    @apply max-w-[40rem] m-auto h-screen flex items-center px-6 overflow-x-hidden;
+    @apply max-w-[40rem] m-auto w-full h-full flex items-center px-6 overflow-x-hidden;
+}
+
+.footer {
+    @apply w-full p-4;
+}
+
+.footer-content {
+    @apply flex flex-col max-w-[40rem] w-full m-auto justify-center items-center;
 }
 
 /* Action Selector */
@@ -59,8 +67,8 @@ body {
 /* Drag & Drop container */
 
 .drag-drop-container {
-    @apply h-[40rem] w-full border-2 border-dashed border-neutral-400 rounded-2xl bg-neutral-100 flex items-center justify-center;
-    @apply text-neutral-400 dark:text-neutral-700 trans flex-col gap-2;
+    @apply h-[40rem] w-full border-2 border-dashed border-neutral-400 rounded-2xl bg-neutral-100  items-center justify-center;
+    @apply text-neutral-400 dark:text-neutral-700 trans  gap-2;
     @apply dark:border-neutral-700 dark:bg-neutral-950;
 }
 

@@ -116,7 +116,10 @@ export class WebRTCPeer {
   }
 
   private setOffererDataChannel(): RTCDataChannel {
-    const dataChannel = this.peerConnection.createDataChannel("main");
+    const dataChannel = this.peerConnection.createDataChannel("main", {
+      ordered: true,
+      maxRetransmits: 3,
+    });
     dataChannel.binaryType = "arraybuffer";
 
     dataChannel.onopen = async () => {
@@ -129,8 +132,8 @@ export class WebRTCPeer {
       sessionStorage.removeItem("__SdbVersion");
     };
 
-    dataChannel.onclose = (event: Event) => {
-      this.handleOnChannelDisconnect();
+    dataChannel.onclose = async (event: Event) => {
+      await this.handleOnChannelDisconnect();
     };
 
     dataChannel.onerror = (event: RTCErrorEvent) => {
@@ -166,8 +169,8 @@ export class WebRTCPeer {
         await handleClearDb();
       };
 
-      this.dataChannel.onclose = (_event: Event) => {
-        this.handleOnChannelDisconnect();
+      this.dataChannel.onclose = async (_event: Event) => {
+        await this.handleOnChannelDisconnect();
       };
 
       this.dataChannel.onerror = (event: RTCErrorEvent) => {
@@ -230,9 +233,10 @@ export class WebRTCPeer {
       throw new Error("SDP ERROR: Cannot create new answer");
     }
   }
-  private resetPeer(): void {
+  private async resetPeer(): Promise<void> {
     this.transferSession = null;
     this.state = PeerState.CONNECTED;
+    await handleClearDb();
   }
 
   /**
@@ -245,7 +249,6 @@ export class WebRTCPeer {
       console.error("Peer not in correct state", this.state);
       return;
     }
-
     try {
       const metadata = await preProcessFile(file, this.currentChunkSize);
       const transferSession: TransferSession = {
@@ -266,7 +269,7 @@ export class WebRTCPeer {
       );
     } catch (error) {
       console.error("Could not start transfer session:", error);
-      this.resetPeer();
+      await this.resetPeer();
     }
   }
 
@@ -286,7 +289,7 @@ export class WebRTCPeer {
 
     await this.sendCancel();
     handleRemoveFileDiv(fileId);
-    this.resetPeer();
+    await this.resetPeer();
   }
 
   async checkCancelSignal(payload: ArrayBuffer): Promise<boolean> {
@@ -338,7 +341,7 @@ export class WebRTCPeer {
           }
           handleFailedFileTransfer(this.transferSession!.fileId);
           this.sendErr();
-          this.resetPeer();
+          await this.resetPeer();
         },
       ],
       [PeerState.CANCEL, async () => {}],
@@ -353,11 +356,11 @@ export class WebRTCPeer {
     await handler();
   }
 
-  private handleOnChannelDisconnect(): void {
+  private async handleOnChannelDisconnect(): Promise<void> {
     peerEmitter.dispatchPeerEvent(PeerEvent.PEER_STATUS_CHANGED, {
       status: "Disconnected",
     });
-    this.resetPeer();
+    await this.resetPeer();
   }
 
   private async decodeMessage(data: ArrayBuffer): Promise<PeerMessage> {
@@ -386,7 +389,7 @@ export class WebRTCPeer {
       this.dataChannel?.send(encryptedData);
     } catch (error) {
       handleFailedFileTransfer(this.transferSession!.fileId);
-      this.resetPeer();
+      await this.resetPeer();
     }
   }
 
@@ -500,12 +503,13 @@ export class WebRTCPeer {
   }
 
   private async handleEOF(): Promise<void> {
-    const { metadata, fileId, chunksIndex } = this.transferSession!;
+    const { metadata, fileId } = this.transferSession!;
     const chunks = await handleRetrieveFromDisk(fileId);
     const blob = new Blob(chunks, { type: metadata.fileType });
     if (blob.size !== metadata.fileSize) {
-      alert("File mismatch !! Transfer session might be corrupted.");
-      this.resetPeer();
+      alert(`File transfer failed!!`);
+      handleFailedFileTransfer(fileId);
+      await this.resetPeer();
       throw new Error("File size mismatch");
     }
     const chunksBuffer = await Promise.all(
@@ -516,9 +520,9 @@ export class WebRTCPeer {
     );
     const hash = await buildHash(chunksBuffer);
     if (hash !== this.transferSession?.metadata.hash) {
-      alert("File mismatch !! Transfer session might be corrupted.");
+      alert("File integrity mismatch!! Session corrupted.");
       handleFailedFileTransfer(fileId);
-      this.resetPeer();
+      await this.resetPeer();
       throw new Error("File hash mismatch");
     }
     handleDisplayFileStatus(fileId, FileStatus.DONE);
