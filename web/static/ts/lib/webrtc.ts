@@ -116,10 +116,7 @@ export class WebRTCPeer {
   }
 
   private setOffererDataChannel(): RTCDataChannel {
-    const dataChannel = this.peerConnection.createDataChannel("main", {
-      ordered: true,
-      maxRetransmits: 3,
-    });
+    const dataChannel = this.peerConnection.createDataChannel("main");
     dataChannel.binaryType = "arraybuffer";
 
     dataChannel.onopen = async () => {
